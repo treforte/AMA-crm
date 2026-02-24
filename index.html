@@ -1,0 +1,1764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alchemy CRM — Contacts, Pipeline & Deals | Alchemist Mind Pros</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'amp': {
+                            'navy': '#1e3a5f',
+                            'navy-dark': '#152a47',
+                            'navy-light': '#2d4a6f',
+                            'gold': '#c9a227',
+                            'gold-light': '#fef3c7',
+                            'gold-dark': '#b8860b',
+                        }
+                    }
+                }
+            }
+        };
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        :root {
+            /* Alchemist Mind Pros brand colors (navy + gold) */
+            --amp-navy: #1e3a5f;
+            --amp-navy-dark: #152a47;
+            --amp-navy-light: #2d4a6f;
+            --amp-gold: #c9a227;
+            --amp-gold-light: #fef3c7;
+            --amp-gold-dark: #b8860b;
+        }
+        body { font-family: 'Inter', sans-serif; background-color: #fafaf9; color: #334155; }
+        .crm-sidebar { background: linear-gradient(135deg, var(--amp-navy) 0%, var(--amp-navy-dark) 100%); min-height: 100vh; }
+        .crm-nav-item { transition: background 0.2s, color 0.2s; }
+        .crm-nav-item:hover { background: rgba(255,255,255,0.1); color: var(--amp-gold-light); }
+        .crm-nav-item.active { background: rgba(201,162,39,0.25); color: var(--amp-gold-light); border-left: 3px solid var(--amp-gold); }
+        .crm-card { background: white; border-radius: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.06); border: 1px solid rgba(30,58,95,0.06); }
+        .crm-table th { background: var(--amp-gold-light); color: var(--amp-navy-dark); font-weight: 600; }
+        .crm-table tbody tr:hover { background: #f8fafc; }
+        .pipeline-column { min-width: 280px; max-width: 320px; background: #f8fafc; border-radius: 0.75rem; }
+        .pipeline-card { background: white; border-radius: 0.5rem; box-shadow: 0 1px 2px rgba(0,0,0,0.06); cursor: grab; transition: box-shadow 0.2s; }
+        .pipeline-card:hover { box-shadow: 0 4px 12px rgba(30,58,95,0.12); }
+        .pipeline-card.dragging { opacity: 0.8; cursor: grabbing; }
+        .pipeline-column.drag-over { background: #e0e7ff; outline: 2px dashed var(--amp-gold); }
+        .pipeline-drop-zone.empty::after { content: 'Drop deals here'; display: block; padding: 1rem; text-align: center; color: #94a3b8; font-size: 0.875rem; border: 2px dashed #cbd5e1; border-radius: 0.5rem; margin: 0.25rem; }
+        .funnel-bar { height: 1.5rem; border-radius: 9999px; transition: width 0.4s ease; }
+        .detail-drawer { transition: transform 0.25s ease; }
+        .settings-tab { border-bottom: 2px solid transparent; }
+        .settings-tab.active { border-bottom-color: var(--amp-gold); color: var(--amp-navy-dark); }
+        .mobile-menu-open .crm-sidebar { transform: translateX(0); }
+        .autosave-toast {
+            position: fixed; top: 0; left: 50%; transform: translate(-50%, -100%);
+            z-index: 100; padding: 0.5rem 1rem; background: var(--amp-navy);
+            color: var(--amp-gold-light); font-size: 0.875rem; font-weight: 500;
+            border-radius: 0 0 0.5rem 0.5rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            transition: transform 0.25s ease;
+        }
+        .autosave-toast.visible { transform: translate(-50%, 0); }
+        @media (max-width: 767px) {
+            .autosave-toast { top: 3.5rem; transform: translate(-50%, -100%); }
+            .autosave-toast.visible { transform: translate(-50%, 0); }
+            .crm-sidebar { position: fixed; left: 0; top: 0; z-index: 40; transform: translateX(-100%); transition: transform 0.25s; width: 260px; }
+        }
+    </style>
+</head>
+<body class="antialiased flex">
+    <!-- Autosave toast (shown by JS) -->
+    <div id="autosaveToast" class="autosave-toast" role="status" aria-live="polite">Changes autosaved</div>
+    <!-- Sidebar -->
+    <aside class="crm-sidebar w-64 flex-shrink-0 text-white hidden md:flex md:flex-col" id="sidebar">
+        <div class="p-5 border-b border-white/10 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-lg bg-amp-gold/30 flex items-center justify-center">
+                    <i data-lucide="layout-grid" class="w-6 h-6 text-amp-gold"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg">Alchemy CRM</h1>
+                    <p class="text-xs text-white/70">by Alchemist Mind Pros</p>
+                </div>
+            </div>
+        </div>
+        <nav class="p-3 space-y-0.5 flex-1">
+            <a href="#" class="crm-nav-item active flex items-center gap-3 px-4 py-3 rounded-lg" data-page="dashboard">
+                <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
+                <span>Dashboard</span>
+            </a>
+            <a href="#" class="crm-nav-item flex items-center gap-3 px-4 py-3 rounded-lg" data-page="contacts">
+                <i data-lucide="users" class="w-5 h-5"></i>
+                <span>Contacts</span>
+            </a>
+            <a href="#" class="crm-nav-item flex items-center gap-3 px-4 py-3 rounded-lg" data-page="pipeline">
+                <i data-lucide="columns-2" class="w-5 h-5"></i>
+                <span>Deals · Kanban</span>
+            </a>
+            <a href="#" class="crm-nav-item flex items-center gap-3 px-4 py-3 rounded-lg" data-page="tasks">
+                <i data-lucide="check-square" class="w-5 h-5"></i>
+                <span>Tasks</span>
+            </a>
+            <a href="#" class="crm-nav-item flex items-center gap-3 px-4 py-3 rounded-lg" data-page="templates">
+                <i data-lucide="mail" class="w-5 h-5"></i>
+                <span>Email templates</span>
+            </a>
+            <a href="#" class="crm-nav-item flex items-center gap-3 px-4 py-3 rounded-lg" data-page="reports">
+                <i data-lucide="bar-chart-2" class="w-5 h-5"></i>
+                <span>Reports</span>
+            </a>
+            <a href="#" class="crm-nav-item flex items-center gap-3 px-4 py-3 rounded-lg" data-page="settings">
+                <i data-lucide="settings" class="w-5 h-5"></i>
+                <span>Settings</span>
+            </a>
+        </nav>
+        <div class="p-4 border-t border-white/10 flex-shrink-0 mt-auto hidden md:block">
+            <div class="flex items-center gap-3 px-2">
+                <div class="w-9 h-9 rounded-full bg-amp-gold/40 flex items-center justify-center text-amp-gold-dark font-semibold">T</div>
+                <div class="min-w-0">
+                    <p class="font-medium truncate">Team User</p>
+                    <p class="text-xs text-white/70 truncate">Admin</p>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Mobile header -->
+    <div class="md:hidden fixed top-0 left-0 right-0 h-14 text-white flex items-center justify-between px-4 z-30 shadow" style="background: linear-gradient(135deg, var(--amp-navy) 0%, var(--amp-navy-dark) 100%);">
+        <button type="button" id="mobileMenuBtn" class="p-2 -ml-2" aria-label="Open menu">
+            <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+        <span class="font-bold">Alchemy CRM</span>
+        <div class="w-10"></div>
+    </div>
+
+    <!-- Overlay for mobile -->
+    <div id="sidebarOverlay" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden" aria-hidden="true"></div>
+
+    <!-- Main content -->
+    <main class="flex-1 min-h-screen md:min-h-0 pt-14 md:pt-0 md:pl-0">
+        <div class="p-4 md:p-6 lg:p-8 max-w-[1600px] mx-auto">
+            <!-- Dashboard -->
+            <section id="page-dashboard" class="crm-page">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <h2 class="text-2xl md:text-3xl font-bold text-amp-navy-dark">Dashboard</h2>
+                    <button type="button" id="quickAddContact" class="inline-flex items-center gap-2 px-4 py-2.5 bg-amp-navy text-white rounded-lg font-medium hover:bg-amp-navy-light transition shadow-md">
+                        <i data-lucide="user-plus" class="w-5 h-5"></i>
+                        Add contact
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                    <div class="crm-card p-5">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-slate-500">Total contacts</p>
+                                <p class="text-2xl font-bold text-amp-navy-dark" id="stat-contacts">—</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-amp-gold-light flex items-center justify-center">
+                                <i data-lucide="users" class="w-6 h-6 text-amp-gold-dark"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crm-card p-5">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-slate-500">Open deals</p>
+                                <p class="text-2xl font-bold text-amp-navy-dark" id="stat-deals">—</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-amp-gold-light flex items-center justify-center">
+                                <i data-lucide="briefcase" class="w-6 h-6 text-amp-gold-dark"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crm-card p-5">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-slate-500">Won this month</p>
+                                <p class="text-2xl font-bold text-green-600" id="stat-won">—</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
+                                <i data-lucide="trending-up" class="w-6 h-6 text-green-700"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="crm-card p-5">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-medium text-slate-500">Pipeline value</p>
+                                <p class="text-2xl font-bold text-amp-navy-dark" id="stat-value">—</p>
+                            </div>
+                            <div class="w-12 h-12 rounded-xl bg-amp-gold-light flex items-center justify-center">
+                                <i data-lucide="dollar-sign" class="w-6 h-6 text-amp-gold-dark"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="crm-card p-6">
+                        <h3 class="font-semibold text-amp-navy-dark mb-4">Funnel overview</h3>
+                        <div id="funnel-bars" class="space-y-3"></div>
+                    </div>
+                    <div class="crm-card p-6">
+                        <h3 class="font-semibold text-amp-navy-dark mb-4">Recent activity</h3>
+                        <ul id="recent-activity" class="space-y-3 max-h-64 overflow-y-auto"></ul>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Contacts -->
+            <section id="page-contacts" class="crm-page hidden">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <h2 class="text-2xl md:text-3xl font-bold text-amp-navy-dark">Contacts</h2>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <div class="relative flex-1 sm:flex-initial min-w-[200px]">
+                            <i data-lucide="search" class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400"></i>
+                            <input type="search" id="contactSearch" placeholder="Search contacts..." class="w-full pl-10 pr-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amp-gold/40 focus:border-amp-gold">
+                        </div>
+                        <select id="contactStageFilter" class="px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amp-gold/40 bg-white">
+                            <option value="">All stages</option>
+                        </select>
+                        <select id="contactTagFilter" class="px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amp-gold/40 bg-white">
+                            <option value="">All tags</option>
+                        </select>
+                        <button type="button" id="exportContactsBtn" class="inline-flex items-center gap-2 px-4 py-2.5 border border-slate-200 rounded-lg font-medium hover:bg-slate-50">
+                            <i data-lucide="download" class="w-5 h-5"></i>
+                            Export CSV
+                        </button>
+                        <button type="button" id="addContactBtn" class="inline-flex items-center gap-2 px-4 py-2.5 bg-amp-navy text-white rounded-lg font-medium hover:bg-amp-navy-light transition shadow-md">
+                            <i data-lucide="user-plus" class="w-5 h-5"></i>
+                            Add contact
+                        </button>
+                    </div>
+                </div>
+                <div class="crm-card overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="crm-table w-full">
+                            <thead>
+                                <tr>
+                                    <th class="w-10 px-4 py-3"><input type="checkbox" id="selectAllContacts" class="rounded border-slate-300 text-amp-navy focus:ring-amp-gold" aria-label="Select all"></th>
+                                    <th class="px-4 py-3 text-left">Name</th>
+                                    <th class="px-4 py-3 text-left hidden sm:table-cell">Email</th>
+                                    <th class="px-4 py-3 text-left hidden md:table-cell">Company</th>
+                                    <th class="px-4 py-3 text-left">Stage</th>
+                                    <th class="px-4 py-3 text-left hidden lg:table-cell">Owner</th>
+                                    <th class="px-4 py-3 text-left hidden lg:table-cell">Tags</th>
+                                    <th class="px-4 py-3 text-right w-24">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contactsTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-t border-slate-200 bg-slate-50/50">
+                        <p class="text-sm text-slate-600" id="contactsPaginationInfo">—</p>
+                        <div class="flex gap-2" id="contactsPagination"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Deals — Kanban view -->
+            <section id="page-pipeline" class="crm-page hidden">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-2xl md:text-3xl font-bold text-amp-navy-dark">Deals</h2>
+                        <p class="text-slate-600 mt-0.5">Kanban view — drag cards between stages to update deal status</p>
+                    </div>
+                    <button type="button" id="addDealBtn" class="inline-flex items-center gap-2 px-4 py-2.5 bg-amp-navy text-white rounded-lg font-medium hover:bg-amp-navy-light transition shadow-md self-start">
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                        Add deal
+                    </button>
+                </div>
+                <div class="overflow-x-auto pb-4">
+                    <div id="pipelineColumns" class="flex gap-4 min-w-max"></div>
+                </div>
+            </section>
+
+            <!-- Tasks -->
+            <section id="page-tasks" class="crm-page hidden">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <h2 class="text-2xl md:text-3xl font-bold text-amp-navy-dark">Tasks</h2>
+                    <div class="flex flex-wrap gap-2">
+                        <select id="taskFilterContact" class="px-4 py-2.5 border border-slate-200 rounded-lg bg-white"><option value="">All contacts</option></select>
+                        <select id="taskFilterStatus" class="px-4 py-2.5 border border-slate-200 rounded-lg bg-white"><option value="">All statuses</option><option value="todo">To do</option><option value="done">Done</option></select>
+                        <button type="button" id="addTaskBtn" class="inline-flex items-center gap-2 px-4 py-2.5 bg-amp-navy text-white rounded-lg font-medium hover:bg-amp-navy-light transition shadow-md">
+                            <i data-lucide="plus" class="w-5 h-5"></i> Add task
+                        </button>
+                    </div>
+                </div>
+                <div class="crm-card overflow-hidden">
+                    <table class="crm-table w-full">
+                        <thead><tr><th class="px-4 py-3">Task</th><th class="px-4 py-3">Contact</th><th class="px-4 py-3">Due</th><th class="px-4 py-3">Owner</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 w-20"></th></tr></thead>
+                        <tbody id="tasksTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Email templates -->
+            <section id="page-templates" class="crm-page hidden">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <h2 class="text-2xl md:text-3xl font-bold text-amp-navy-dark">Email templates</h2>
+                    <button type="button" id="addTemplateBtn" class="inline-flex items-center gap-2 px-4 py-2.5 bg-amp-navy text-white rounded-lg font-medium hover:bg-amp-navy-light transition shadow-md">
+                        <i data-lucide="plus" class="w-5 h-5"></i> New template
+                    </button>
+                </div>
+                <div id="emailTemplatesList" class="space-y-3"></div>
+            </section>
+
+            <!-- Reports -->
+            <section id="page-reports" class="crm-page hidden">
+                <h2 class="text-2xl md:text-3xl font-bold text-amp-navy-dark mb-6">Reports</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <button type="button" class="settings-tab reports-tab p-4 crm-card text-left font-medium text-slate-600 hover:text-amp-navy" data-report="sales">Sales</button>
+                    <button type="button" class="settings-tab reports-tab p-4 crm-card text-left font-medium text-slate-600 hover:text-amp-navy" data-report="marketing">Marketing</button>
+                    <button type="button" class="settings-tab reports-tab p-4 crm-card text-left font-medium text-slate-600 hover:text-amp-navy" data-report="operations">Operations</button>
+                </div>
+                <div id="reportContent" class="crm-card p-6"></div>
+            </section>
+
+            <!-- Settings (advanced) -->
+            <section id="page-settings" class="crm-page hidden">
+                <h2 class="text-2xl md:text-3xl font-bold text-amp-navy-dark mb-6">Settings</h2>
+                <div class="flex flex-wrap gap-2 mb-6 border-b border-slate-200">
+                    <button type="button" class="settings-tab px-4 py-2 font-medium text-slate-600 hover:text-amp-navy" data-tab="database">Database</button>
+                    <button type="button" class="settings-tab px-4 py-2 font-medium text-slate-600 hover:text-amp-navy" data-tab="general">General</button>
+                    <button type="button" class="settings-tab px-4 py-2 font-medium text-slate-600 hover:text-amp-navy" data-tab="company">Company info</button>
+                    <button type="button" class="settings-tab px-4 py-2 font-medium text-slate-600 hover:text-amp-navy" data-tab="billing">Billing & card</button>
+                    <button type="button" class="settings-tab px-4 py-2 font-medium text-slate-600 hover:text-amp-navy" data-tab="users">Users & permissions</button>
+                    <button type="button" class="settings-tab px-4 py-2 font-medium text-slate-600 hover:text-amp-navy" data-tab="integrations">Integrations</button>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-4 mb-4">
+                    <p class="text-sm text-slate-600">Changes auto-save when you leave a field. You can also click Save settings to save everything at once.</p>
+                    <div class="flex items-center gap-3">
+                        <span id="settingsSaveFeedback" class="text-sm text-green-600 font-medium hidden">Saved</span>
+                        <button type="button" id="settingsSaveBtn" class="inline-flex items-center gap-2 px-5 py-2.5 bg-amp-navy text-white rounded-lg font-medium hover:bg-amp-navy-light transition shadow-md">
+                            <i data-lucide="save" class="w-5 h-5"></i>
+                            Save settings
+                        </button>
+                    </div>
+                </div>
+                <div id="settingsTabDatabase" class="settings-tab-content crm-card p-6 hidden">
+                    <h3 class="font-semibold text-amp-navy-dark mb-4">Database connection</h3>
+                    <p class="text-slate-600 mb-4">Data in the browser (localStorage) does not sync across users or devices. Connect a Supabase project so all team members see the same data. <strong>One Supabase project per client.</strong> Run <code class="text-sm bg-slate-100 px-1 rounded">supabase-schema.sql</code> in your project once, then paste credentials below.</p>
+                    <div class="space-y-3 max-w-lg">
+                        <label class="block"><span class="text-sm font-medium text-slate-700">Supabase Project URL</span><input type="url" id="dbUrl" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="https://xxxxx.supabase.co"></label>
+                        <label class="block"><span class="text-sm font-medium text-slate-700">Supabase anon (public) key</span><input type="password" id="dbAnonKey" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="eyJhbG..." autocomplete="off"></label>
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="dbSaveBtn" class="px-4 py-2 bg-amp-navy text-white rounded-lg font-medium hover:bg-amp-navy-light">Save & connect</button>
+                            <span id="dbStatus" class="text-sm text-slate-500"></span>
+                        </div>
+                        <p class="text-xs text-slate-500">Leave blank and save to use local-only (single device). Credentials are stored in this browser only.</p>
+                    </div>
+                </div>
+                <div id="settingsTabGeneral" class="settings-tab-content crm-card p-6 hidden">
+                    <h3 class="font-semibold text-amp-navy-dark mb-4">General</h3>
+                    <p class="text-slate-600 mb-4">Timezone, date format, and default pipeline stages.</p>
+                    <div class="space-y-3 max-w-md"><label class="block"><span class="text-sm font-medium text-slate-700">Timezone</span><select class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg bg-white" id="settingsTimezone"><option value="America/Los_Angeles">Pacific</option><option value="America/New_York">Eastern</option><option value="America/Chicago">Central</option></select></label></div>
+                </div>
+                <div id="settingsTabCompany" class="settings-tab-content crm-card p-6 hidden">
+                    <h3 class="font-semibold text-amp-navy-dark mb-4">Company info</h3>
+                    <div class="space-y-3 max-w-md">
+                        <label class="block"><span class="text-sm font-medium text-slate-700">Company name</span><input type="text" id="settingsCompanyName" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="Your company"></label>
+                        <label class="block"><span class="text-sm font-medium text-slate-700">Address</span><input type="text" id="settingsCompanyAddress" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="Street, City, State"></label>
+                        <label class="block"><span class="text-sm font-medium text-slate-700">Business type</span><input type="text" id="settingsBusinessType" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="e.g. B2B, B2C, Agency"></label>
+                        <label class="block"><span class="text-sm font-medium text-slate-700">Customer persona (ICP)</span><input type="text" id="settingsCustomerPersona" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="e.g. SMB owners, marketing directors"></label>
+                        <label class="block"><span class="text-sm font-medium text-slate-700">Key services</span><input type="text" id="settingsKeyServices" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="e.g. Paid ads, CRM, landing pages"></label>
+                        <label class="block"><span class="text-sm font-medium text-slate-700">Competitor URLs</span><input type="text" id="settingsCompetitorUrls" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="e.g. competitor1.com, competitor2.com"></label>
+                    </div>
+                </div>
+                <div id="settingsTabBilling" class="settings-tab-content crm-card p-6 hidden">
+                    <h3 class="font-semibold text-amp-navy-dark mb-4">Membership & billing</h3>
+                    <p class="text-slate-600 mb-4">Manage plan and payment method.</p>
+                    <div class="space-y-3 max-w-md">
+                        <div class="p-3 bg-amp-gold-light/40 rounded-lg"><p class="text-sm font-medium text-amp-navy-dark">Current plan</p><p class="text-slate-600">Alchemy CRM — Unlimited contacts & users</p></div>
+                        <label class="block"><span class="text-sm font-medium text-slate-700">Card on file</span><input type="text" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg bg-slate-50" placeholder="•••• •••• •••• 4242" readonly></label>
+                    </div>
+                </div>
+                <div id="settingsTabUsers" class="settings-tab-content crm-card p-6 hidden">
+                    <h3 class="font-semibold text-amp-navy-dark mb-4">Users & permissions</h3>
+                    <p class="text-slate-600 mb-4">Invite team members and set roles (Admin, Member, Viewer).</p>
+                    <div id="settingsUsersList" class="space-y-2 max-w-lg"></div>
+                    <button type="button" id="settingsInviteUser" class="mt-4 inline-flex items-center gap-2 px-4 py-2 border border-amp-navy text-amp-navy rounded-lg font-medium hover:bg-amp-gold-light/40"><i data-lucide="user-plus" class="w-4 h-4"></i> Invite user</button>
+                </div>
+                <div id="settingsTabIntegrations" class="settings-tab-content crm-card p-6 hidden">
+                    <h3 class="font-semibold text-amp-navy-dark mb-4">Integrations</h3>
+                    <div class="space-y-6">
+                        <div>
+                            <h4 class="font-medium text-amp-navy-dark mb-2">Google Gemini (AI)</h4>
+                            <p class="text-sm text-slate-600 mb-2">Enter your own Gemini API key for AI recommendations: how to use the CRM, workflow improvements, and workflows tailored to your company goals and industry. Get a key at <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" class="text-amp-gold-dark underline">Google AI Studio</a>. Your key is stored locally and used only for AI in this CRM.</p>
+                            <input type="password" id="settingsGeminiKey" class="w-full max-w-md px-4 py-2 border border-slate-200 rounded-lg" placeholder="Paste your Gemini API key" autocomplete="off">
+                            <p class="text-xs text-slate-500 mt-1">Leave blank to disable AI. For production, use a server-side proxy to keep keys secure.</p>
+                        </div>
+                        <div>
+                            <h4 class="font-medium text-amp-navy-dark mb-2">AI context (optional)</h4>
+                            <p class="text-sm text-slate-600 mb-2">Help the AI give better workflow and usage recommendations.</p>
+                            <label class="block mb-1 text-sm text-slate-700">Industry</label>
+                            <input type="text" id="settingsIndustry" class="w-full max-w-md px-4 py-2 border border-slate-200 rounded-lg mb-3" placeholder="e.g. Law firm, HVAC, Insurance, SaaS">
+                            <label class="block mb-1 text-sm text-slate-700">Primary goals</label>
+                            <input type="text" id="settingsGoals" class="w-full max-w-md px-4 py-2 border border-slate-200 rounded-lg" placeholder="e.g. More qualified leads, faster follow-up, higher close rate">
+                        </div>
+                        <div><h4 class="font-medium text-amp-navy-dark mb-2">Call platforms</h4><p class="text-sm text-slate-600 mb-2">Connect CallRail, Invoca, or other call tracking. Paste webhook URL or API key below.</p><label class="block mb-1 text-sm text-slate-700">CallRail</label><input type="text" id="settingsCallRail" class="w-full max-w-md px-4 py-2 border border-slate-200 rounded-lg mb-3" placeholder="Webhook URL or API key"><label class="block mb-1 text-sm text-slate-700">Invoca</label><input type="text" id="settingsInvoca" class="w-full max-w-md px-4 py-2 border border-slate-200 rounded-lg" placeholder="API key or webhook URL"></div>
+                    </div>
+                    <div class="mt-6"><a href="CRM-ARCHITECTURE-AND-COSTS.md" class="inline-flex items-center gap-2 text-amp-navy font-medium hover:text-amp-gold-dark"><i data-lucide="file-text" class="w-5 h-5"></i> Architecture & costs guide</a></div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- AI Assistant (Gemini) floating button -->
+    <button type="button" id="aiAssistantBtn" class="fixed bottom-6 right-6 z-20 w-14 h-14 rounded-full bg-amp-navy text-white shadow-lg flex items-center justify-center hover:bg-amp-navy-light transition" aria-label="AI Assistant"><i data-lucide="sparkles" class="w-7 h-7"></i></button>
+    <div id="aiAssistantPanel" class="fixed bottom-24 right-6 z-20 w-96 max-h-[70vh] crm-card hidden flex-col shadow-xl">
+        <div class="flex items-center justify-between p-3 border-b border-slate-200"><span class="font-semibold text-amp-navy-dark">AI Assistant</span><button type="button" id="closeAiPanel" class="p-1.5 text-slate-400 hover:text-slate-600 rounded"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+        <div class="p-3 flex-1 overflow-y-auto">
+            <p class="text-sm text-slate-600 mb-2">Get recommendations on using the CRM, workflow improvements, and workflows for your goals and industry.</p>
+            <div class="flex flex-wrap gap-1.5 mb-2">
+                <button type="button" class="ai-quick-prompt px-2.5 py-1 bg-amp-gold-light/60 hover:bg-amp-gold-light text-amp-navy-dark text-xs font-medium rounded-full border border-amp-gold/40" data-prompt="How can I use this CRM more effectively? Give me 5 best practices.">Best practices</button>
+                <button type="button" class="ai-quick-prompt px-2.5 py-1 bg-amp-gold-light/60 hover:bg-amp-gold-light text-amp-navy-dark text-xs font-medium rounded-full border border-amp-gold/40" data-prompt="Suggest a follow-up workflow for leads in the Proposal stage. Include steps and timing.">Proposal workflow</button>
+                <button type="button" class="ai-quick-prompt px-2.5 py-1 bg-amp-gold-light/60 hover:bg-amp-gold-light text-amp-navy-dark text-xs font-medium rounded-full border border-amp-gold/40" data-prompt="Create a workflow tailored to my company goals and industry. Use the industry and goals I set in Settings if available.">Workflow for my industry</button>
+                <button type="button" class="ai-quick-prompt px-2.5 py-1 bg-amp-gold-light/60 hover:bg-amp-gold-light text-amp-navy-dark text-xs font-medium rounded-full border border-amp-gold/40" data-prompt="How can I improve my response time and never lose a lead? Give actionable steps.">Improve response time</button>
+            </div>
+            <textarea id="aiPrompt" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm resize-none" rows="3" placeholder="e.g. Suggest 3 follow-up tasks for leads in Proposal stage, or ask for workflow ideas"></textarea>
+            <button type="button" id="aiSendBtn" class="mt-2 w-full py-2 bg-amp-gold text-amp-navy-dark font-medium rounded-lg hover:bg-amp-gold-light">Send</button>
+        </div>
+        <div id="aiResponse" class="p-3 border-t border-slate-100 text-sm text-slate-700 min-h-[80px] hidden"></div>
+    </div>
+
+    <!-- Task modal -->
+    <div id="taskModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50" aria-modal="true" role="dialog">
+        <div class="crm-card w-full max-w-md" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-lg font-semibold text-amp-navy-dark" id="taskModalTitle">Add task</h3>
+                <button type="button" id="closeTaskModal" class="p-2 -m-2 text-slate-400 hover:text-slate-600 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="taskForm" class="p-4 space-y-4">
+                <input type="hidden" id="taskId">
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Task *</label><input type="text" id="taskTitle" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amp-gold/40" placeholder="e.g. Follow up call"></div>
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Contact</label><select id="taskContactId" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-white"></select></div>
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Due date</label><input type="date" id="taskDueDate" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amp-gold/40"></div>
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Owner</label><select id="taskOwnerId" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-white"></select></div>
+                <div class="flex gap-2 pt-2"><button type="submit" class="flex-1 px-4 py-2.5 bg-amp-navy text-white rounded-lg font-medium">Save</button><button type="button" id="cancelTaskModal" class="px-4 py-2.5 border border-slate-200 rounded-lg font-medium hover:bg-slate-50">Cancel</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Email template modal -->
+    <div id="templateModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50" aria-modal="true" role="dialog">
+        <div class="crm-card w-full max-w-2xl max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-lg font-semibold text-amp-navy-dark" id="templateModalTitle">New email template</h3>
+                <button type="button" id="closeTemplateModal" class="p-2 -m-2 text-slate-400 hover:text-slate-600 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="templateForm" class="p-4 space-y-4">
+                <input type="hidden" id="templateId">
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Template name *</label><input type="text" id="templateName" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg" placeholder="e.g. Welcome follow-up"></div>
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Subject *</label><input type="text" id="templateSubject" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg" placeholder="Email subject"></div>
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Body *</label><textarea id="templateBody" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg min-h-[120px]" placeholder="Hi {{contact.name}}, we'll meet at {{company.address}} on {{meeting.date}}. Use variables below."></textarea></div>
+                <div class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">
+                    <p class="font-medium text-slate-700 mb-1.5">Available variables (use in subject or body). Type <kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-slate-700">/</kbd> to open a variable picker.</p>
+                    <p class="mb-1"><strong>Contact:</strong> <code class="bg-white px-1 rounded">{{name}}</code> <code class="bg-white px-1 rounded">{{contact.name}}</code> <code class="bg-white px-1 rounded">{{contact.email}}</code> <code class="bg-white px-1 rounded">{{contact.phone}}</code> <code class="bg-white px-1 rounded">{{company}}</code> <code class="bg-white px-1 rounded">{{contact.company}}</code> <code class="bg-white px-1 rounded">{{contact.notes}}</code> <code class="bg-white px-1 rounded">{{contact.stage}}</code> <code class="bg-white px-1 rounded">{{contact.lead_source}}</code> <code class="bg-white px-1 rounded">{{contact.tags}}</code></p>
+                    <p class="mb-1"><strong>Deal:</strong> <code class="bg-white px-1 rounded">{{deal.name}}</code> <code class="bg-white px-1 rounded">{{deal.value}}</code> <code class="bg-white px-1 rounded">{{deal.stage}}</code></p>
+                    <p class="mb-1"><strong>Company (Settings → Company info):</strong> <code class="bg-white px-1 rounded">{{company.name}}</code> <code class="bg-white px-1 rounded">{{company.address}}</code> <code class="bg-white px-1 rounded">{{company.business_type}}</code> <code class="bg-white px-1 rounded">{{company.industry}}</code></p>
+                    <p class="mb-1"><strong>Meeting (next task):</strong> <code class="bg-white px-1 rounded">{{meeting.title}}</code> <code class="bg-white px-1 rounded">{{meeting.date}}</code> <code class="bg-white px-1 rounded">{{meeting.details}}</code></p>
+                    <p><strong>Date/time:</strong> <code class="bg-white px-1 rounded">{{date.today}}</code> <code class="bg-white px-1 rounded">{{time.now}}</code></p>
+                </div>
+                <div class="flex gap-2 pt-2"><button type="submit" class="flex-1 px-4 py-2.5 bg-amp-navy text-white rounded-lg font-medium">Save template</button><button type="button" id="cancelTemplateModal" class="px-4 py-2.5 border border-slate-200 rounded-lg font-medium hover:bg-slate-50">Cancel</button></div>
+            </form>
+            <div id="templateVariableMenu" class="hidden fixed z-[60] bg-white border border-slate-200 rounded-lg shadow-lg max-h-48 overflow-y-auto py-1 min-w-[220px]" role="listbox"></div>
+        </div>
+    </div>
+
+    <!-- Add/Edit Contact Modal -->
+    <div id="contactModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50" aria-modal="true" role="dialog">
+        <div class="crm-card w-full max-w-md max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-lg font-semibold text-amp-navy-dark" id="contactModalTitle">Add contact</h3>
+                <button type="button" id="closeContactModal" class="p-2 -m-2 text-slate-400 hover:text-slate-600 rounded-lg" aria-label="Close">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <form id="contactForm" class="p-4 space-y-4">
+                <input type="hidden" id="contactId">
+                <div>
+                    <label for="contactName" class="block text-sm font-medium text-slate-700 mb-1">Name *</label>
+                    <input type="text" id="contactName" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amp-gold/40">
+                </div>
+                <div>
+                    <label for="contactEmail" class="block text-sm font-medium text-slate-700 mb-1">Email</label>
+                    <input type="email" id="contactEmail" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amp-gold/40">
+                </div>
+                <div>
+                    <label for="contactPhone" class="block text-sm font-medium text-slate-700 mb-1">Phone</label>
+                    <input type="tel" id="contactPhone" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amp-gold/40">
+                </div>
+                <div>
+                    <label for="contactCompany" class="block text-sm font-medium text-slate-700 mb-1">Company</label>
+                    <input type="text" id="contactCompany" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amp-gold/40">
+                </div>
+                                <div>
+                                    <label for="contactStage" class="block text-sm font-medium text-slate-700 mb-1">Stage</label>
+                                    <select id="contactStage" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amp-gold/40 bg-white"></select>
+                                </div>
+                                <div>
+                                    <label for="contactOwner" class="block text-sm font-medium text-slate-700 mb-1">Owner</label>
+                                    <select id="contactOwner" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amp-gold/40 bg-white"></select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-slate-700 mb-1">Tags</label>
+                                    <div id="contactTagsContainer" class="flex flex-wrap gap-2 p-2 border border-slate-200 rounded-lg min-h-[42px]"></div>
+                                    <p class="text-xs text-slate-500 mt-1">Click to toggle: social, webinar, email campaign, google, meta, referral</p>
+                                </div>
+                                <div>
+                                    <label for="contactLeadSource" class="block text-sm font-medium text-slate-700 mb-1">Lead source</label>
+                                    <select id="contactLeadSource" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amp-gold/40 bg-white">
+                                        <option value="">— Select —</option>
+                                        <option value="google ads">Google Ads</option>
+                                        <option value="facebook">Facebook</option>
+                                        <option value="x">X</option>
+                                        <option value="yelp">Yelp</option>
+                                        <option value="direct">Direct</option>
+                                        <option value="organic social">Organic social</option>
+                                        <option value="referral">Referral</option>
+                                        <option value="other">Other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label for="contactNotes" class="block text-sm font-medium text-slate-700 mb-1">Notes</label>
+                                    <textarea id="contactNotes" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg focus:ring-2 focus:ring-amp-gold/40" rows="2" placeholder="Quick notes"></textarea>
+                                </div>
+                                <div class="flex gap-2 pt-2">
+                    <button type="submit" class="flex-1 px-4 py-2.5 bg-amp-navy text-white rounded-lg font-medium hover:bg-amp-navy-light">Save</button>
+                    <button type="button" id="cancelContactModal" class="px-4 py-2.5 border border-slate-200 rounded-lg font-medium hover:bg-slate-50">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Contact / Deal detail drawer (click from Kanban or Contacts) -->
+    <div id="contactDetailDrawer" class="fixed inset-y-0 right-0 z-40 w-full max-w-lg bg-white shadow-xl detail-drawer transform translate-x-full flex flex-col" aria-hidden="true">
+        <div class="flex items-center justify-between p-4 border-b border-slate-200 flex-shrink-0">
+            <h3 class="text-lg font-semibold text-amp-navy-dark">Contact & deal details</h3>
+            <button type="button" id="closeDetailDrawer" class="p-2 -m-2 text-slate-400 hover:text-slate-600 rounded-lg" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div id="contactDetailContent" class="flex-1 overflow-y-auto p-4"></div>
+    </div>
+    <div id="contactDetailOverlay" class="fixed inset-0 bg-black/40 z-30 hidden" aria-hidden="true"></div>
+
+    <script>
+        (function() {
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+
+            var STORAGE_KEY = 'customcrm_data';
+            var DB_CONFIG_KEY = 'alchemy_crm_db_config';
+            var DEFAULT_TAGS = ['social', 'webinar', 'email campaign', 'google', 'meta', 'referral'];
+
+            function getDbConfig() {
+                try {
+                    var raw = localStorage.getItem(DB_CONFIG_KEY);
+                    if (raw) {
+                        var c = JSON.parse(raw);
+                        if (c && c.url && c.anonKey) return c;
+                    }
+                } catch (e) {}
+                return null;
+            }
+            function setDbConfig(url, anonKey) {
+                if (!url || !anonKey) {
+                    localStorage.removeItem(DB_CONFIG_KEY);
+                    return;
+                }
+                localStorage.setItem(DB_CONFIG_KEY, JSON.stringify({ url: url.trim(), anonKey: anonKey.trim() }));
+            }
+            var STAGES = [
+                { id: 'lead', name: 'Lead', color: 'bg-slate-200' },
+                { id: 'qualified', name: 'Qualified', color: 'bg-blue-200' },
+                { id: 'proposal', name: 'Proposal', color: 'bg-amp-gold-light' },
+                { id: 'negotiation', name: 'Negotiation', color: 'bg-amber-200' },
+                { id: 'won', name: 'Won', color: 'bg-green-200' },
+                { id: 'lost', name: 'Lost', color: 'bg-red-200' }
+            ];
+
+            function getDefaultTeamMembers() {
+                return [{ id: 'tm1', name: 'Team User', role: 'Admin', email: 'admin@company.com' }];
+            }
+
+            function getDefaultContacts() {
+                return [
+                    { id: '1', name: 'Jamie Chen', email: 'jamie@acme.com', phone: '(555) 123-4567', company: 'Acme Inc', stageId: 'lead', ownerId: 'tm1', tags: ['google'], leadSource: 'Google Ads', notes: '', createdAt: Date.now() - 86400000 * 2 },
+                    { id: '2', name: 'Sam Rivera', email: 'sam@techco.io', phone: '(555) 234-5678', company: 'TechCo', stageId: 'qualified', ownerId: 'tm1', tags: ['webinar'], leadSource: 'Webinar', notes: '', createdAt: Date.now() - 86400000 * 1 },
+                    { id: '3', name: 'Alex Park', email: 'alex@builders.com', phone: '(555) 345-6789', company: 'Builders LLC', stageId: 'proposal', ownerId: 'tm1', tags: [], leadSource: '', notes: '', createdAt: Date.now() - 86400000 * 3 },
+                    { id: '4', name: 'Jordan Lee', email: 'jordan@design.co', phone: '(555) 456-7890', company: 'Design Co', stageId: 'negotiation', ownerId: 'tm1', tags: ['email campaign'], leadSource: '', notes: '', createdAt: Date.now() - 86400000 * 0.5 },
+                    { id: '5', name: 'Morgan Taylor', email: 'morgan@services.com', phone: '(555) 567-8901', company: 'Home Services', stageId: 'won', ownerId: 'tm1', tags: [], leadSource: '', notes: '', createdAt: Date.now() - 86400000 * 5 },
+                    { id: '6', name: 'Riley Adams', email: 'riley@local.biz', phone: '(555) 678-9012', company: 'Local Biz', stageId: 'lead', ownerId: 'tm1', tags: ['social'], leadSource: 'Meta', notes: '', createdAt: Date.now() - 86400000 * 1 },
+                    { id: '7', name: 'Casey Brown', email: 'casey@startup.io', phone: '(555) 789-0123', company: 'Startup IO', stageId: 'qualified', ownerId: 'tm1', tags: [], leadSource: '', notes: '', createdAt: Date.now() - 86400000 * 4 },
+                    { id: '8', name: 'Drew Wilson', email: 'drew@agency.co', phone: '(555) 890-1234', company: 'Agency Co', stageId: 'proposal', ownerId: 'tm1', tags: ['referral'], leadSource: '', notes: '', createdAt: Date.now() - 86400000 * 2 }
+                ];
+            }
+
+            function getDefaultDeals() {
+                return [
+                    { id: 'd1', contactId: '1', name: 'Acme — Website', value: 5000, stageId: 'lead', ownerId: 'tm1' },
+                    { id: 'd2', contactId: '2', name: 'TechCo — Integration', value: 12000, stageId: 'qualified', ownerId: 'tm1' },
+                    { id: 'd3', contactId: '3', name: 'Builders — Retainer', value: 8000, stageId: 'proposal', ownerId: 'tm1' },
+                    { id: 'd4', contactId: '4', name: 'Design Co — Brand', value: 7500, stageId: 'negotiation', ownerId: 'tm1' },
+                    { id: 'd5', contactId: '5', name: 'Home Services — Campaign', value: 3000, stageId: 'won', ownerId: 'tm1' },
+                    { id: 'd6', contactId: '6', name: 'Local Biz — Ads', value: 2000, stageId: 'lead', ownerId: 'tm1' },
+                    { id: 'd7', contactId: '7', name: 'Startup IO — CRM', value: 4500, stageId: 'qualified', ownerId: 'tm1' }
+                ];
+            }
+
+            function getDefaultTasks() {
+                return [
+                    { id: 't1', contactId: '1', title: 'Call to qualify', dueDate: new Date().toISOString().slice(0,10), ownerId: 'tm1', status: 'todo', createdAt: Date.now() },
+                    { id: 't2', contactId: '2', title: 'Send proposal', dueDate: new Date(Date.now() + 86400000).toISOString().slice(0,10), ownerId: 'tm1', status: 'todo', createdAt: Date.now() }
+                ];
+            }
+
+            function getDefaultEmailTemplates() {
+                return [{ id: 'et1', name: 'Welcome follow-up', subject: 'Great connecting with you, {{name}}', body: 'Hi {{name}},\n\nThanks for your interest. We\'d love to help {{company}} with next steps.\n\nBest,\nYour team' }];
+            }
+
+            function getDefaultSettings() {
+                return { timezone: 'America/Los_Angeles', companyName: '', companyAddress: '', businessType: '', customerPersona: '', keyServices: '', competitorUrls: '', geminiKey: '', callRail: '', invoca: '', industry: '', primaryGoals: '' };
+            }
+
+            function loadFromLocalStorage() {
+                try {
+                    var raw = localStorage.getItem(STORAGE_KEY);
+                    if (raw) {
+                        var parsed = JSON.parse(raw);
+                        var teamMembers = parsed.teamMembers || getDefaultTeamMembers();
+                        var contacts = (parsed.contacts || getDefaultContacts()).map(function(c) {
+                            if (!c.tags) c.tags = [];
+                            if (!c.ownerId && teamMembers[0]) c.ownerId = teamMembers[0].id;
+                            return c;
+                        });
+                        var deals = (parsed.deals || getDefaultDeals()).map(function(d) {
+                            if (!d.ownerId && teamMembers[0]) d.ownerId = teamMembers[0].id;
+                            return d;
+                        });
+                        return {
+                            contacts: contacts,
+                            deals: deals,
+                            teamMembers: teamMembers,
+                            tasks: parsed.tasks || getDefaultTasks(),
+                            emailTemplates: parsed.emailTemplates || getDefaultEmailTemplates(),
+                            settings: Object.assign({}, getDefaultSettings(), parsed.settings || {})
+                        };
+                    }
+                } catch (e) {}
+                return {
+                    contacts: getDefaultContacts(),
+                    deals: getDefaultDeals(),
+                    teamMembers: getDefaultTeamMembers(),
+                    tasks: getDefaultTasks(),
+                    emailTemplates: getDefaultEmailTemplates(),
+                    settings: getDefaultSettings()
+                };
+            }
+
+            function supabaseFetch(cfg, path, opts) {
+                var url = cfg.url.replace(/\/$/, '') + '/rest/v1' + path;
+                var headers = { 'apikey': cfg.anonKey, 'Authorization': 'Bearer ' + cfg.anonKey, 'Content-Type': 'application/json' };
+                if (opts && opts.method) headers['Prefer'] = opts.prefer || '';
+                return fetch(url, { method: opts && opts.method || 'GET', headers: headers, body: opts && opts.body ? JSON.stringify(opts.body) : undefined }).then(function(r) {
+                    if (!r.ok) throw new Error(r.statusText);
+                    if (r.status === 204) return null;
+                    return r.json();
+                });
+            }
+
+            function loadFromSupabase() {
+                var cfg = getDbConfig();
+                if (!cfg || !cfg.url || !cfg.anonKey) return Promise.resolve(loadFromLocalStorage());
+                return Promise.all([
+                    supabaseFetch(cfg, '/team_members?select=*'),
+                    supabaseFetch(cfg, '/contacts?select=*'),
+                    supabaseFetch(cfg, '/deals?select=*'),
+                    supabaseFetch(cfg, '/tasks?select=*'),
+                    supabaseFetch(cfg, '/email_templates?select=*'),
+                    supabaseFetch(cfg, '/settings?id=eq.default').then(function(arr) { return Array.isArray(arr) && arr[0] ? arr[0] : null; })
+                ]).then(function(results) {
+                    var teamRows = Array.isArray(results[0]) ? results[0] : [];
+                    var contactRows = Array.isArray(results[1]) ? results[1] : [];
+                    var dealRows = Array.isArray(results[2]) ? results[2] : [];
+                    var taskRows = Array.isArray(results[3]) ? results[3] : [];
+                    var templateRows = Array.isArray(results[4]) ? results[4] : [];
+                    var settingsRow = results[5];
+                    var teamMembers = teamRows.length ? teamRows.map(function(r) { return { id: r.id, name: r.name, role: r.role || 'Member', email: r.email }; }) : getDefaultTeamMembers();
+                    var contacts = contactRows.map(function(r) {
+                        return {
+                            id: r.id,
+                            name: r.name,
+                            email: r.email || '',
+                            phone: r.phone || '',
+                            company: r.company || '',
+                            stageId: r.stage_id || 'lead',
+                            ownerId: r.owner_id || (teamMembers[0] && teamMembers[0].id),
+                            tags: Array.isArray(r.tags) ? r.tags : (r.tags || []),
+                            leadSource: r.lead_source || '',
+                            notes: r.notes || '',
+                            createdAt: r.created_at != null ? r.created_at : Date.now()
+                        };
+                    });
+                    if (!contacts.length) contacts = getDefaultContacts();
+                    var deals = dealRows.map(function(r) {
+                        return { id: r.id, contactId: r.contact_id, name: r.name, value: Number(r.value) || 0, stageId: r.stage_id || 'lead', ownerId: r.owner_id || (teamMembers[0] && teamMembers[0].id) };
+                    });
+                    if (!deals.length) deals = getDefaultDeals();
+                    var tasks = taskRows.map(function(r) {
+                        return { id: r.id, contactId: r.contact_id, title: r.title, dueDate: r.due_date || null, ownerId: r.owner_id, status: r.status || 'todo', createdAt: r.created_at };
+                    });
+                    if (!tasks.length) tasks = getDefaultTasks();
+                    var emailTemplates = templateRows.length ? templateRows.map(function(r) { return { id: r.id, name: r.name, subject: r.subject, body: r.body }; }) : getDefaultEmailTemplates();
+                    var settings = getDefaultSettings();
+                    if (settingsRow) {
+                        settings.timezone = settingsRow.timezone || settings.timezone;
+                        settings.companyName = settingsRow.company_name || '';
+                        settings.companyAddress = settingsRow.company_address || '';
+                        settings.businessType = settingsRow.business_type || '';
+                        settings.customerPersona = settingsRow.customer_persona || '';
+                        settings.keyServices = settingsRow.key_services || '';
+                        settings.competitorUrls = settingsRow.competitor_urls || '';
+                        settings.geminiKey = settingsRow.gemini_key || '';
+                        settings.callRail = settingsRow.call_rail || '';
+                        settings.invoca = settingsRow.invoca || '';
+                        settings.industry = settingsRow.industry || '';
+                        settings.primaryGoals = settingsRow.primary_goals || '';
+                    }
+                    return { contacts: contacts, deals: deals, teamMembers: teamMembers, tasks: tasks, emailTemplates: emailTemplates, settings: settings };
+                }).catch(function(err) {
+                    console.error('Supabase load error', err);
+                    return loadFromLocalStorage();
+                });
+            }
+
+            function loadData() {
+                return loadFromSupabase();
+            }
+
+            function saveToSupabase(data) {
+                var cfg = getDbConfig();
+                if (!cfg || !cfg.url || !cfg.anonKey) return Promise.resolve();
+                var teamRows = (data.teamMembers || []).map(function(t) { return { id: t.id, name: t.name, role: t.role || 'Member', email: t.email }; });
+                var contactRows = (data.contacts || []).map(function(c) {
+                    return { id: c.id, name: c.name, email: c.email || null, phone: c.phone || null, company: c.company || null, stage_id: c.stageId || 'lead', owner_id: c.ownerId || null, tags: c.tags || [], lead_source: c.leadSource || null, notes: c.notes || null, created_at: c.createdAt != null ? c.createdAt : null };
+                });
+                var dealRows = (data.deals || []).map(function(d) { return { id: d.id, contact_id: d.contactId, name: d.name, value: d.value || 0, stage_id: d.stageId || 'lead', owner_id: d.ownerId || null }; });
+                var taskRows = (data.tasks || []).map(function(t) { return { id: t.id, contact_id: t.contactId, title: t.title, due_date: t.dueDate || null, owner_id: t.ownerId, status: t.status || 'todo', created_at: t.createdAt }; });
+                var templateRows = (data.emailTemplates || []).map(function(e) { return { id: e.id, name: e.name, subject: e.subject, body: e.body }; });
+                var s = data.settings || {};
+                var settingsRow = { id: 'default', timezone: s.timezone || 'America/Los_Angeles', company_name: s.companyName || null, company_address: s.companyAddress || null, business_type: s.businessType || null, customer_persona: s.customerPersona || null, key_services: s.keyServices || null, competitor_urls: s.competitorUrls || null, gemini_key: s.geminiKey || null, call_rail: s.callRail || null, invoca: s.invoca || null, industry: s.industry || null, primary_goals: s.primaryGoals || null };
+                var baseUrl = cfg.url.replace(/\/$/, '') + '/rest/v1';
+                var upsert = function(path, body) {
+                    return fetch(baseUrl + path, {
+                        method: 'POST',
+                        headers: { 'apikey': cfg.anonKey, 'Authorization': 'Bearer ' + cfg.anonKey, 'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+                        body: JSON.stringify(Array.isArray(body) ? body : [body])
+                    }).then(function(r) {
+                        if (!r.ok) {
+                            return r.text().then(function(t) {
+                                var msg = t;
+                                try { var j = JSON.parse(t); if (j.message) msg = j.message; } catch (e) {}
+                                throw new Error(r.status + ' ' + (msg || r.statusText));
+                            });
+                        }
+                    });
+                };
+                return Promise.all([
+                    teamRows.length ? upsert('/team_members', teamRows) : Promise.resolve(),
+                    contactRows.length ? upsert('/contacts', contactRows) : Promise.resolve(),
+                    dealRows.length ? upsert('/deals', dealRows) : Promise.resolve(),
+                    taskRows.length ? upsert('/tasks', taskRows) : Promise.resolve(),
+                    templateRows.length ? upsert('/email_templates', templateRows) : Promise.resolve(),
+                    upsert('/settings', settingsRow)
+                ]);
+            }
+
+            function showAutosaveToast() {
+                var el = document.getElementById('autosaveToast');
+                if (!el) return;
+                el.classList.add('visible');
+                clearTimeout(showAutosaveToast._tid);
+                showAutosaveToast._tid = setTimeout(function() {
+                    el.classList.remove('visible');
+                }, 2500);
+            }
+
+            function saveData(data, opts) {
+                if (getDbConfig()) {
+                    saveToSupabase(data).catch(function(err) {
+                        console.error('Supabase save error', err);
+                        var statusEl = document.getElementById('dbStatus');
+                        if (statusEl) statusEl.textContent = 'Save failed: ' + (err && err.message ? err.message : 'Check console');
+                        else alert('Database save failed: ' + (err && err.message ? err.message : 'Check Settings → Database and console (F12).'));
+                    });
+                }
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                        contacts: data.contacts,
+                        deals: data.deals,
+                        teamMembers: data.teamMembers,
+                        tasks: data.tasks,
+                        emailTemplates: data.emailTemplates,
+                        settings: data.settings
+                    }));
+                } catch (e) {}
+                if (opts && opts.autosaveToast) showAutosaveToast();
+            }
+
+            var state = loadFromLocalStorage();
+
+            function getContactById(id) {
+                return state.contacts.find(function(c) { return c.id === id; });
+            }
+
+            function getStageById(id) {
+                return STAGES.find(function(s) { return s.id === id; });
+            }
+
+            function getTeamMemberById(id) {
+                return state.teamMembers.find(function(t) { return t.id === id; });
+            }
+
+            function getDealById(id) {
+                return state.deals.find(function(d) { return d.id === id; });
+            }
+
+            /** Build a flat map of template variable names to values for contact, deal, company (settings), and next meeting (task). */
+            function getTemplateVariables(contact, deal) {
+                var s = state.settings || {};
+                var stage = contact && getStageById(contact.stageId);
+                var dealStage = deal && getStageById(deal.stageId);
+                var contactTasks = contact ? state.tasks.filter(function(t) { return t.contactId === contact.id && t.dueDate; }).sort(function(a, b) { return (a.dueDate || '').localeCompare(b.dueDate || ''); }) : [];
+                var nextTask = contactTasks[0] || null;
+                var vars = {
+                    name: (contact && contact.name) || '',
+                    company: (contact && contact.company) || '',
+                    'contact.name': (contact && contact.name) || '',
+                    'contact.email': (contact && contact.email) || '',
+                    'contact.phone': (contact && contact.phone) || '',
+                    'contact.company': (contact && contact.company) || '',
+                    'contact.notes': (contact && contact.notes) || '',
+                    'contact.lead_source': (contact && contact.leadSource) || '',
+                    'contact.stage': (stage && stage.name) || (contact && contact.stageId) || '',
+                    'contact.tags': (contact && contact.tags && contact.tags.length) ? contact.tags.join(', ') : '',
+                    'deal.name': (deal && deal.name) || '',
+                    'deal.value': deal ? String(deal.value != null ? deal.value : '') : '',
+                    'deal.stage': (dealStage && dealStage.name) || (deal && deal.stageId) || '',
+                    'company.name': s.companyName || '',
+                    'company.address': s.companyAddress || '',
+                    'company.business_type': s.businessType || '',
+                    'company.industry': s.industry || '',
+                    'meeting.title': (nextTask && nextTask.title) || '',
+                    'meeting.date': (nextTask && nextTask.dueDate) || '',
+                    'meeting.time': '',
+                    'meeting.details': nextTask ? (nextTask.title || 'Meeting') + (nextTask.dueDate ? ' on ' + nextTask.dueDate : '') : '',
+                    'date.today': new Date().toISOString().slice(0, 10),
+                    'time.now': new Date().toTimeString().slice(0, 5)
+                };
+                return vars;
+            }
+
+            function applyTemplateVariables(text, variables) {
+                if (!text || typeof text !== 'string') return '';
+                var result = text;
+                Object.keys(variables || {}).forEach(function(key) {
+                    var val = variables[key] != null ? String(variables[key]) : '';
+                    result = result.replace(new RegExp('\\{\\{\\s*' + key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\}\\}', 'gi'), val);
+                });
+                return result;
+            }
+
+            // ——— Navigation ———
+            document.querySelectorAll('.crm-nav-item[data-page]').forEach(function(link) {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    var page = this.getAttribute('data-page');
+                    document.querySelectorAll('.crm-page').forEach(function(el) { el.classList.add('hidden'); });
+                    document.querySelectorAll('.crm-nav-item').forEach(function(el) { el.classList.remove('active'); });
+                    var pageEl = document.getElementById('page-' + page);
+                    if (pageEl) pageEl.classList.remove('hidden');
+                    var active = document.querySelector('.crm-nav-item[data-page="' + page + '"]');
+                    if (active) active.classList.add('active');
+                    if (page === 'pipeline') renderPipeline();
+                    if (page === 'contacts') renderContacts();
+                    if (page === 'tasks') renderTasks();
+                    if (page === 'templates') renderEmailTemplates();
+                    if (page === 'reports') renderReports();
+                    if (page === 'settings') openSettingsTab('database');
+                    document.body.classList.remove('mobile-menu-open');
+                });
+            });
+
+            document.getElementById('mobileMenuBtn').addEventListener('click', function() {
+                document.body.classList.add('mobile-menu-open');
+            });
+            document.getElementById('sidebarOverlay').addEventListener('click', function() {
+                document.body.classList.remove('mobile-menu-open');
+            });
+
+            // ——— Dashboard ———
+            function renderDashboard() {
+                var contacts = state.contacts;
+                var deals = state.deals;
+                var openDeals = deals.filter(function(d) { return d.stageId !== 'won' && d.stageId !== 'lost'; });
+                var wonDeals = deals.filter(function(d) { return d.stageId === 'won'; });
+                var totalValue = openDeals.reduce(function(sum, d) { return sum + (d.value || 0); }, 0);
+
+                document.getElementById('stat-contacts').textContent = contacts.length;
+                document.getElementById('stat-deals').textContent = openDeals.length;
+                document.getElementById('stat-won').textContent = wonDeals.length;
+                document.getElementById('stat-value').textContent = '$' + totalValue.toLocaleString();
+
+                var maxCount = Math.max.apply(null, STAGES.map(function(s) {
+                    return s.id === 'won' || s.id === 'lost' ? 0 : contacts.filter(function(c) { return c.stageId === s.id; }).length;
+                })) || 1;
+                var funnelHtml = STAGES.filter(function(s) { return s.id !== 'won' && s.id !== 'lost'; }).map(function(s) {
+                    var count = contacts.filter(function(c) { return c.stageId === s.id; }).length;
+                    var pct = Math.round((count / maxCount) * 100);
+                    return '<div class="flex items-center gap-3"><span class="w-24 text-sm font-medium text-slate-700">' + s.name + '</span><div class="flex-1 bg-slate-100 rounded-full overflow-hidden"><div class="funnel-bar ' + s.color + '" style="width:' + pct + '%"></div></div><span class="text-sm font-semibold text-amp-navy">' + count + '</span></div>';
+                }).join('');
+                document.getElementById('funnel-bars').innerHTML = funnelHtml;
+
+                var recent = state.contacts.slice().sort(function(a, b) { return (b.createdAt || 0) - (a.createdAt || 0); }).slice(0, 5);
+                document.getElementById('recent-activity').innerHTML = recent.map(function(c) {
+                    return '<li class="flex items-center gap-3 py-2 border-b border-slate-100 last:border-0"><div class="w-9 h-9 rounded-full bg-amp-gold-light flex items-center justify-center text-amp-gold-dark font-semibold">' + (c.name.charAt(0) || '?') + '</div><div><p class="font-medium text-slate-800">' + (c.name || 'Unknown') + '</p><p class="text-sm text-slate-500">Added ' + (c.createdAt ? new Date(c.createdAt).toLocaleDateString() : '') + '</p></div></li>';
+                }).join('');
+                lucide.createIcons();
+            }
+
+            // ——— Contacts (paginated) ———
+            var contactsPage = 1;
+            var contactsPerPage = 10;
+
+            function renderContacts() {
+                var search = (document.getElementById('contactSearch') && document.getElementById('contactSearch').value) || '';
+                var stageFilter = (document.getElementById('contactStageFilter') && document.getElementById('contactStageFilter').value) || '';
+                var tagFilter = (document.getElementById('contactTagFilter') && document.getElementById('contactTagFilter').value) || '';
+                var filtered = state.contacts.filter(function(c) {
+                    var matchSearch = !search || (c.name && c.name.toLowerCase().includes(search.toLowerCase())) || (c.email && c.email.toLowerCase().includes(search.toLowerCase())) || (c.company && c.company.toLowerCase().includes(search.toLowerCase()));
+                    var matchStage = !stageFilter || c.stageId === stageFilter;
+                    var matchTag = !tagFilter || (c.tags && c.tags.indexOf(tagFilter) !== -1);
+                    return matchSearch && matchStage && matchTag;
+                });
+                var total = filtered.length;
+                var start = (contactsPage - 1) * contactsPerPage;
+                var pageContacts = filtered.slice(start, start + contactsPerPage);
+
+                var stageSelect = document.getElementById('contactStageFilter');
+                if (stageSelect && stageSelect.options.length <= 1) {
+                    STAGES.forEach(function(s) {
+                        var opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.textContent = s.name;
+                        stageSelect.appendChild(opt);
+                    });
+                }
+
+                var tagSelect = document.getElementById('contactTagFilter');
+                if (tagSelect && tagSelect.options.length <= 1) {
+                    DEFAULT_TAGS.forEach(function(t) {
+                        var opt = document.createElement('option');
+                        opt.value = t;
+                        opt.textContent = t;
+                        tagSelect.appendChild(opt);
+                    });
+                }
+
+                var tbody = document.getElementById('contactsTableBody');
+                if (!tbody) return;
+                tbody.innerHTML = pageContacts.map(function(c) {
+                    var stage = getStageById(c.stageId);
+                    var owner = getTeamMemberById(c.ownerId);
+                    var tagsHtml = (c.tags && c.tags.length) ? c.tags.map(function(t) { return '<span class="inline-flex px-2 py-0.5 rounded text-xs bg-amp-gold-light text-amp-gold-dark">' + t + '</span>'; }).join(' ') : '—';
+                    return '<tr><td class="px-4 py-3"><input type="checkbox" class="contact-checkbox rounded border-slate-300 text-amp-navy focus:ring-amp-gold" data-id="' + c.id + '" aria-label="Select ' + (c.name || '') + '"></td><td class="px-4 py-3 font-medium"><button type="button" class="contact-view text-left hover:text-amp-gold-dark" data-id="' + c.id + '">' + (c.name || '—') + '</button></td><td class="px-4 py-3 hidden sm:table-cell">' + (c.email || '—') + '</td><td class="px-4 py-3 hidden md:table-cell">' + (c.company || '—') + '</td><td class="px-4 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (stage ? stage.color + ' text-slate-800' : '') + '">' + (stage ? stage.name : c.stageId) + '</span></td><td class="px-4 py-3 hidden lg:table-cell">' + (owner ? owner.name : '—') + '</td><td class="px-4 py-3 hidden lg:table-cell">' + tagsHtml + '</td><td class="px-4 py-3 text-right"><button type="button" class="contact-edit p-2 text-slate-500 hover:text-amp-navy rounded" data-id="' + c.id + '" aria-label="Edit"><i data-lucide="pencil" class="w-4 h-4"></i></button></td></tr>';
+                }).join('');
+
+                document.getElementById('contactsPaginationInfo').textContent = 'Showing ' + (start + 1) + '–' + Math.min(start + contactsPerPage, total) + ' of ' + total;
+                var paginationEl = document.getElementById('contactsPagination');
+                paginationEl.innerHTML = '';
+                var totalPages = Math.ceil(total / contactsPerPage);
+                for (var p = 1; p <= totalPages; p++) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.className = 'px-3 py-1.5 rounded border text-sm font-medium ' + (p === contactsPage ? 'bg-amp-navy text-white border-amp-navy' : 'border-slate-200 hover:bg-slate-100');
+                    btn.textContent = p;
+                    btn.addEventListener('click', function() { contactsPage = parseInt(this.textContent, 10); renderContacts(); });
+                    paginationEl.appendChild(btn);
+                }
+
+                document.querySelectorAll('.contact-edit').forEach(function(btn) {
+                    btn.addEventListener('click', function(e) { e.stopPropagation(); openContactModal(btn.getAttribute('data-id')); });
+                });
+                document.querySelectorAll('.contact-view').forEach(function(btn) {
+                    btn.addEventListener('click', function(e) { e.stopPropagation(); openDetailDrawer(btn.getAttribute('data-id'), null); });
+                });
+                document.querySelectorAll('.contact-checkbox').forEach(function(cb) {
+                    cb.addEventListener('change', toggleBulkActions);
+                });
+                lucide.createIcons();
+            }
+            if (document.getElementById('contactTagFilter')) {
+                document.getElementById('contactTagFilter').addEventListener('change', function() { contactsPage = 1; renderContacts(); });
+            }
+
+            document.getElementById('selectAllContacts').addEventListener('change', function() {
+                var checked = this.checked;
+                document.querySelectorAll('.contact-checkbox').forEach(function(cb) { cb.checked = checked; });
+                toggleBulkActions();
+            });
+
+            function toggleBulkActions() {
+                var n = document.querySelectorAll('.contact-checkbox:checked').length;
+                // Could show a bulk action bar here
+            }
+
+            if (document.getElementById('contactSearch')) {
+                document.getElementById('contactSearch').addEventListener('input', function() { contactsPage = 1; renderContacts(); });
+            }
+            if (document.getElementById('contactStageFilter')) {
+                document.getElementById('contactStageFilter').addEventListener('change', function() { contactsPage = 1; renderContacts(); });
+            }
+
+            // ——— Pipeline (Kanban) ———
+            function renderPipeline() {
+                var container = document.getElementById('pipelineColumns');
+                if (!container) return;
+                container.innerHTML = STAGES.map(function(stage) {
+                    var dealsInStage = state.deals.filter(function(d) { return d.stageId === stage.id; });
+                    var totalInStage = dealsInStage.reduce(function(s, d) { return s + (d.value || 0); }, 0);
+                    var cardsHtml = dealsInStage.map(function(d) {
+                        var contact = getContactById(d.contactId);
+                        var cid = (contact && contact.id) || '';
+                        return '<div class="pipeline-card p-3 mb-2" data-deal-id="' + d.id + '" data-contact-id="' + cid + '" draggable="true" role="button" tabindex="0"><p class="font-medium text-slate-800">' + (d.name || 'Deal') + '</p><p class="text-sm text-slate-500">' + (contact ? contact.company || contact.name : '—') + '</p><p class="text-sm font-semibold text-amp-gold-dark mt-1">$' + (d.value || 0).toLocaleString() + '</p></div>';
+                    }).join('');
+                    var dropZoneClass = 'p-2 min-h-[120px] pipeline-drop-zone' + (dealsInStage.length === 0 ? ' empty' : '');
+                    return '<div class="pipeline-column flex-shrink-0" data-stage-id="' + stage.id + '"><div class="p-3 border-b border-slate-200 flex justify-between items-center"><div><h4 class="font-semibold text-amp-navy-dark">' + stage.name + '</h4><p class="text-xs text-slate-500">' + dealsInStage.length + ' deals · $' + totalInStage.toLocaleString() + '</p></div></div><div class="' + dropZoneClass + '">' + cardsHtml + '</div></div>';
+                }).join('');
+
+                container.querySelectorAll('.pipeline-card').forEach(function(card) {
+                    card.addEventListener('dragstart', handleDealDragStart);
+                    card.addEventListener('click', function(e) {
+                        if (e.target.closest('button')) return;
+                        var cid = card.getAttribute('data-contact-id');
+                        var did = card.getAttribute('data-deal-id');
+                        openDetailDrawer(cid || null, did);
+                    });
+                });
+                container.querySelectorAll('.pipeline-column').forEach(function(col) {
+                    var zone = col.querySelector('.pipeline-drop-zone');
+                    if (zone) {
+                        zone.addEventListener('dragover', handleDealDragOver);
+                        zone.addEventListener('drop', handleDealDrop);
+                        zone.addEventListener('dragleave', handleDealDragLeave);
+                    }
+                });
+                lucide.createIcons();
+            }
+
+            var draggedDealId = null;
+
+            function handleDealDragStart(e) {
+                draggedDealId = e.target.getAttribute('data-deal-id');
+                e.target.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', draggedDealId);
+            }
+
+            function handleDealDragOver(e) {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                var col = e.target.closest('.pipeline-column');
+                if (col) col.classList.add('drag-over');
+            }
+
+            function handleDealDragLeave(e) {
+                var col = e.target.closest('.pipeline-column');
+                if (col && !col.contains(e.relatedTarget)) col.classList.remove('drag-over');
+            }
+
+            function handleDealDrop(e) {
+                e.preventDefault();
+                var col = e.target.closest('.pipeline-column');
+                if (col) col.classList.remove('drag-over');
+                var stageId = col && col.getAttribute('data-stage-id');
+                if (!stageId || !draggedDealId) return;
+                var deal = state.deals.find(function(d) { return d.id === draggedDealId; });
+                if (deal) {
+                    deal.stageId = stageId;
+                    saveData(state);
+                    renderPipeline();
+                }
+                document.querySelectorAll('.pipeline-card').forEach(function(c) { c.classList.remove('dragging'); });
+                draggedDealId = null;
+            }
+
+            document.addEventListener('dragend', function() {
+                document.querySelectorAll('.pipeline-card').forEach(function(c) { c.classList.remove('dragging'); });
+                document.querySelectorAll('.pipeline-column').forEach(function(c) { c.classList.remove('drag-over'); });
+                draggedDealId = null;
+            });
+
+            // ——— Contact modal ———
+            function renderContactTagsContainer(selectedTags) {
+                var container = document.getElementById('contactTagsContainer');
+                if (!container) return;
+                container.innerHTML = DEFAULT_TAGS.map(function(t) {
+                    var on = selectedTags && selectedTags.indexOf(t) !== -1;
+                    return '<button type="button" class="contact-tag-pill px-2 py-1 rounded text-xs font-medium ' + (on ? 'bg-amp-gold text-amp-navy-dark' : 'bg-slate-100 text-slate-600 hover:bg-amp-gold-light') + '" data-tag="' + t + '">' + t + '</button>';
+                }).join('');
+                container.querySelectorAll('.contact-tag-pill').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var t = btn.getAttribute('data-tag');
+                        var on = btn.classList.contains('bg-amp-gold');
+                        if (on) { btn.classList.remove('bg-amp-gold', 'text-amp-navy-dark'); btn.classList.add('bg-slate-100', 'text-slate-600'); }
+                        else { btn.classList.add('bg-amp-gold', 'text-amp-navy-dark'); btn.classList.remove('bg-slate-100', 'text-slate-600'); }
+                    });
+                });
+            }
+            function getContactTagsFromForm() {
+                var container = document.getElementById('contactTagsContainer');
+                if (!container) return [];
+                var pills = container.querySelectorAll('.contact-tag-pill.bg-amp-gold');
+                return Array.prototype.map.call(pills, function(p) { return p.getAttribute('data-tag'); });
+            }
+            function openContactModal(contactId) {
+                var modal = document.getElementById('contactModal');
+                var form = document.getElementById('contactForm');
+                document.getElementById('contactModalTitle').textContent = contactId ? 'Edit contact' : 'Add contact';
+                document.getElementById('contactId').value = contactId || '';
+                var stageSelect = document.getElementById('contactStage');
+                stageSelect.innerHTML = STAGES.map(function(s) { return '<option value="' + s.id + '">' + s.name + '</option>'; }).join('');
+                var ownerSelect = document.getElementById('contactOwner');
+                ownerSelect.innerHTML = state.teamMembers.map(function(t) { return '<option value="' + t.id + '">' + t.name + '</option>'; }).join('');
+                if (contactId) {
+                    var c = getContactById(contactId);
+                    if (c) {
+                        document.getElementById('contactName').value = c.name || '';
+                        document.getElementById('contactEmail').value = c.email || '';
+                        document.getElementById('contactPhone').value = c.phone || '';
+                        document.getElementById('contactCompany').value = c.company || '';
+                        document.getElementById('contactStage').value = c.stageId || 'lead';
+                        document.getElementById('contactOwner').value = c.ownerId || (state.teamMembers[0] && state.teamMembers[0].id) || '';
+                        document.getElementById('contactLeadSource').value = c.leadSource || '';
+                        document.getElementById('contactNotes').value = c.notes || '';
+                        renderContactTagsContainer(c.tags || []);
+                    }
+                } else {
+                    form.reset();
+                    document.getElementById('contactId').value = '';
+                    document.getElementById('contactStage').value = 'lead';
+                    document.getElementById('contactOwner').value = (state.teamMembers[0] && state.teamMembers[0].id) || '';
+                    renderContactTagsContainer([]);
+                }
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            }
+
+            function closeContactModal() {
+                document.getElementById('contactModal').classList.add('hidden');
+                document.getElementById('contactModal').classList.remove('flex');
+            }
+
+            document.getElementById('contactForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                var id = document.getElementById('contactId').value;
+                var payload = {
+                    name: document.getElementById('contactName').value.trim(),
+                    email: document.getElementById('contactEmail').value.trim(),
+                    phone: document.getElementById('contactPhone').value.trim(),
+                    company: document.getElementById('contactCompany').value.trim(),
+                    stageId: document.getElementById('contactStage').value || 'lead',
+                    ownerId: document.getElementById('contactOwner').value || (state.teamMembers[0] && state.teamMembers[0].id) || '',
+                    tags: getContactTagsFromForm(),
+                    leadSource: (document.getElementById('contactLeadSource') && document.getElementById('contactLeadSource').value) || '',
+                    notes: (document.getElementById('contactNotes') && document.getElementById('contactNotes').value) || ''
+                };
+                if (id) {
+                    var idx = state.contacts.findIndex(function(c) { return c.id === id; });
+                    if (idx !== -1) {
+                        state.contacts[idx] = Object.assign({}, state.contacts[idx], payload);
+                    }
+                } else {
+                    payload.id = 'c' + Date.now();
+                    payload.createdAt = Date.now();
+                    state.contacts.push(payload);
+                }
+                saveData(state);
+                closeContactModal();
+                renderDashboard();
+                renderContacts();
+                lucide.createIcons();
+            });
+
+            // ——— Contact / Deal detail drawer ———
+            function openDetailDrawer(contactId, dealId) {
+                var contact = contactId ? getContactById(contactId) : (dealId ? getContactById((getDealById(dealId) || {}).contactId) : null);
+                var deal = dealId ? getDealById(dealId) : (contactId ? state.deals.find(function(d) { return d.contactId === contactId; }) : null);
+                var html = '';
+                if (contact) {
+                    var stage = getStageById(contact.stageId);
+                    var owner = getTeamMemberById(contact.ownerId);
+                    html += '<div class="space-y-4"><div class="flex items-start justify-between"><div><h4 class="text-lg font-semibold text-amp-navy-dark">' + (contact.name || '—') + '</h4><p class="text-slate-600">' + (contact.company || '') + '</p></div><button type="button" class="detail-edit-contact px-3 py-1.5 bg-amp-navy text-white text-sm rounded-lg" data-id="' + contact.id + '">Edit</button></div>';
+                    html += '<dl class="grid grid-cols-1 gap-2 text-sm"><dt class="text-slate-500">Email</dt><dd>' + (contact.email || '—') + '</dd><dt class="text-slate-500">Phone</dt><dd>' + (contact.phone || '—') + '</dd><dt class="text-slate-500">Stage</dt><dd><span class="px-2 py-0.5 rounded-full text-xs font-medium ' + (stage ? stage.color : '') + '">' + (stage ? stage.name : contact.stageId) + '</span></dd><dt class="text-slate-500">Owner</dt><dd>' + (owner ? owner.name : '—') + '</dd><dt class="text-slate-500">Tags</dt><dd>' + (contact.tags && contact.tags.length ? contact.tags.join(', ') : '—') + '</dd><dt class="text-slate-500">Lead source</dt><dd>' + (contact.leadSource || '—') + '</dd></dl>';
+                    if (contact.notes) html += '<div><p class="text-sm font-medium text-slate-700 mb-1">Notes</p><p class="text-slate-600 text-sm">' + (contact.notes || '').replace(/\n/g, '<br>') + '</p></div>';
+                }
+                if (deal) {
+                    html += '<div class="border-t border-slate-200 pt-4"><h5 class="font-semibold text-amp-navy-dark mb-2">Deal</h5><p class="font-medium">' + (deal.name || '—') + '</p><p class="text-amp-gold-dark font-semibold">$' + (deal.value || 0).toLocaleString() + '</p><p class="text-xs text-slate-500">' + (getStageById(deal.stageId) ? getStageById(deal.stageId).name : deal.stageId) + '</p></div>';
+                }
+                var contactTasks = contact ? state.tasks.filter(function(t) { return t.contactId === contact.id; }) : [];
+                html += '<div class="border-t border-slate-200 pt-4"><h5 class="font-semibold text-amp-navy-dark mb-2">Tasks</h5>' + (contactTasks.length ? '<ul class="space-y-1 text-sm">' + contactTasks.slice(0, 5).map(function(t) { return '<li>' + (t.title || '') + ' — ' + (t.dueDate || '') + ' (' + (t.status || 'todo') + ')</li>'; }).join('') + '</ul>' : '<p class="text-slate-500 text-sm">No tasks yet.</p>') + '<button type="button" class="detail-add-task mt-2 px-3 py-1.5 border border-amp-navy text-amp-navy text-sm rounded-lg" data-contact-id="' + (contact ? contact.id : '') + '">Add task</button></div>';
+                html += '<div class="border-t border-slate-200 pt-4"><h5 class="font-semibold text-amp-navy-dark mb-2">Email</h5><select id="detailTemplateSelect" class="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm mb-2"><option value="">Choose template</option></select><button type="button" class="detail-send-email px-3 py-1.5 bg-amp-gold text-amp-navy-dark text-sm rounded-lg font-medium">Use template in follow-up</button></div>';
+                document.getElementById('contactDetailContent').innerHTML = html;
+                var sel = document.getElementById('detailTemplateSelect');
+                if (sel) { state.emailTemplates.forEach(function(et) { var o = document.createElement('option'); o.value = et.id; o.textContent = et.name; sel.appendChild(o); }); }
+                document.getElementById('contactDetailDrawer').classList.remove('translate-x-full');
+                document.getElementById('contactDetailDrawer').setAttribute('aria-hidden', 'false');
+                document.getElementById('contactDetailOverlay').classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                var editBtn = document.querySelector('.detail-edit-contact');
+                if (editBtn) editBtn.addEventListener('click', function() { closeDetailDrawer(); openContactModal(editBtn.getAttribute('data-id')); });
+                var addTaskBtn = document.querySelector('.detail-add-task');
+                if (addTaskBtn) addTaskBtn.addEventListener('click', function() { closeDetailDrawer(); openTaskModal(addTaskBtn.getAttribute('data-contact-id') || null); });
+                var sendBtn = document.querySelector('.detail-send-email');
+                if (sendBtn && contact) sendBtn.addEventListener('click', function() {
+                    var sel = document.getElementById('detailTemplateSelect');
+                    var tid = sel && sel.value;
+                    if (!tid) { window.alert('Choose a template first.'); return; }
+                    var et = state.emailTemplates.find(function(t) { return t.id === tid; });
+                    if (!et) return;
+                    var vars = getTemplateVariables(contact, deal);
+                    var body = applyTemplateVariables(et.body || '', vars);
+                    var subj = applyTemplateVariables(et.subject || '', vars);
+                    window.alert('Subject: ' + subj + '\n\nBody:\n' + body.slice(0, 500) + (body.length > 500 ? '…' : ''));
+                });
+                lucide.createIcons();
+            }
+            function closeDetailDrawer() {
+                document.getElementById('contactDetailDrawer').classList.add('translate-x-full');
+                document.getElementById('contactDetailDrawer').setAttribute('aria-hidden', 'true');
+                document.getElementById('contactDetailOverlay').classList.add('hidden');
+                document.body.style.overflow = '';
+            }
+            document.getElementById('closeDetailDrawer').addEventListener('click', closeDetailDrawer);
+            document.getElementById('contactDetailOverlay').addEventListener('click', closeDetailDrawer);
+
+            document.getElementById('closeContactModal').addEventListener('click', closeContactModal);
+            document.getElementById('cancelContactModal').addEventListener('click', closeContactModal);
+            document.getElementById('contactModal').addEventListener('click', function(e) { if (e.target === this) closeContactModal(); });
+
+            document.getElementById('quickAddContact').addEventListener('click', function() { openContactModal(); });
+            document.getElementById('addContactBtn').addEventListener('click', function() { openContactModal(); });
+            document.getElementById('exportContactsBtn').addEventListener('click', function() {
+                var headers = ['Name','Email','Phone','Company','Stage','Owner','Tags','Lead source'];
+                var rows = state.contacts.map(function(c) {
+                    var owner = getTeamMemberById(c.ownerId);
+                    return [c.name||'', c.email||'', c.phone||'', c.company||'', (getStageById(c.stageId)&&getStageById(c.stageId).name)||c.stageId||'', (owner&&owner.name)||'', (c.tags&&c.tags.length)?c.tags.join(';'):'', c.leadSource||''];
+                });
+                var csv = [headers.join(',')].concat(rows.map(function(r){ return r.map(function(cell){ return '"' + String(cell).replace(/"/g,'""') + '"'; }).join(','); })).join('\n');
+                var a = document.createElement('a');
+                a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+                a.download = 'alchemy-crm-contacts-' + new Date().toISOString().slice(0,10) + '.csv';
+                a.click();
+            });
+
+            document.getElementById('addDealBtn').addEventListener('click', function() {
+                var name = window.prompt('Deal name');
+                if (!name) return;
+                var value = parseInt(window.prompt('Deal value ($)') || '0', 10);
+                state.deals.push({
+                    id: 'd' + Date.now(),
+                    contactId: state.contacts[0] ? state.contacts[0].id : null,
+                    name: name,
+                    value: value,
+                    stageId: 'lead',
+                    ownerId: state.teamMembers[0] ? state.teamMembers[0].id : null
+                });
+                saveData(state);
+                renderPipeline();
+                renderDashboard();
+            });
+
+            // ——— Settings tabs ———
+            function openSettingsTab(tabId) {
+                document.querySelectorAll('.settings-tab[data-tab]').forEach(function(t) {
+                    t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
+                });
+                document.querySelectorAll('.settings-tab-content').forEach(function(el) {
+                    el.classList.add('hidden');
+                    if (el.id === 'settingsTab' + tabId.charAt(0).toUpperCase() + tabId.slice(1)) el.classList.remove('hidden');
+                });
+                if (tabId === 'general') {
+                    var tz = document.getElementById('settingsTimezone');
+                    if (tz) tz.value = state.settings.timezone || 'America/Los_Angeles';
+                }
+                if (tabId === 'company') {
+                    var cn = document.getElementById('settingsCompanyName');
+                    var ca = document.getElementById('settingsCompanyAddress');
+                    var bt = document.getElementById('settingsBusinessType');
+                    var cp = document.getElementById('settingsCustomerPersona');
+                    var ks = document.getElementById('settingsKeyServices');
+                    var cu = document.getElementById('settingsCompetitorUrls');
+                    if (cn) cn.value = state.settings.companyName || '';
+                    if (ca) ca.value = state.settings.companyAddress || '';
+                    if (bt) bt.value = state.settings.businessType || '';
+                    if (cp) cp.value = state.settings.customerPersona || '';
+                    if (ks) ks.value = state.settings.keyServices || '';
+                    if (cu) cu.value = state.settings.competitorUrls || '';
+                }
+                if (tabId === 'users') {
+                    var ul = document.getElementById('settingsUsersList');
+                    if (ul) ul.innerHTML = state.teamMembers.map(function(u) { return '<div class="flex justify-between items-center p-2 border border-slate-200 rounded-lg"><span>' + (u.name || '') + ' — ' + (u.role || '') + '</span></div>'; }).join('');
+                    lucide.createIcons();
+                }
+                if (tabId === 'database') {
+                    var cfg = getDbConfig();
+                    var urlEl = document.getElementById('dbUrl');
+                    var keyEl = document.getElementById('dbAnonKey');
+                    if (urlEl) urlEl.value = (cfg && cfg.url) || '';
+                    if (keyEl) keyEl.value = (cfg && cfg.anonKey) || '';
+                    document.getElementById('dbStatus').textContent = cfg ? 'Connected to database.' : '';
+                }
+                if (tabId === 'integrations') {
+                    var gk = document.getElementById('settingsGeminiKey');
+                    var cr = document.getElementById('settingsCallRail');
+                    var inv = document.getElementById('settingsInvoca');
+                    var ind = document.getElementById('settingsIndustry');
+                    var goals = document.getElementById('settingsGoals');
+                    if (gk) gk.value = state.settings.geminiKey || '';
+                    if (cr) cr.value = state.settings.callRail || '';
+                    if (inv) inv.value = state.settings.invoca || '';
+                    if (ind) ind.value = state.settings.industry || '';
+                    if (goals) goals.value = state.settings.primaryGoals || '';
+                }
+            }
+            document.querySelectorAll('.settings-tab[data-tab]').forEach(function(btn) {
+                btn.addEventListener('click', function() { openSettingsTab(btn.getAttribute('data-tab')); });
+            });
+            document.getElementById('settingsTimezone').addEventListener('change', function() { state.settings.timezone = this.value; saveData(state, { autosaveToast: true }); });
+            function collectAndSaveSettings() {
+                var el = function(id) { var e = document.getElementById(id); return e ? e.value : ''; };
+                state.settings.timezone = el('settingsTimezone') || state.settings.timezone;
+                state.settings.companyName = el('settingsCompanyName');
+                state.settings.companyAddress = el('settingsCompanyAddress');
+                state.settings.businessType = el('settingsBusinessType');
+                state.settings.customerPersona = el('settingsCustomerPersona');
+                state.settings.keyServices = el('settingsKeyServices');
+                state.settings.competitorUrls = el('settingsCompetitorUrls');
+                state.settings.geminiKey = el('settingsGeminiKey');
+                state.settings.callRail = el('settingsCallRail');
+                state.settings.invoca = el('settingsInvoca');
+                state.settings.industry = el('settingsIndustry');
+                state.settings.primaryGoals = el('settingsGoals');
+                saveData(state);
+                var feedback = document.getElementById('settingsSaveFeedback');
+                if (feedback) {
+                    feedback.classList.remove('hidden');
+                    feedback.textContent = 'Saved';
+                    window.clearTimeout(window._settingsSaveFeedbackTimeout);
+                    window._settingsSaveFeedbackTimeout = window.setTimeout(function() { feedback.classList.add('hidden'); }, 2500);
+                }
+            }
+            document.getElementById('settingsSaveBtn').addEventListener('click', function() {
+                collectAndSaveSettings();
+                lucide.createIcons();
+            });
+            document.getElementById('settingsCompanyName').addEventListener('blur', function() { state.settings.companyName = this.value; saveData(state, { autosaveToast: true }); });
+            document.getElementById('settingsCompanyAddress').addEventListener('blur', function() { state.settings.companyAddress = this.value; saveData(state, { autosaveToast: true }); });
+            document.getElementById('settingsBusinessType').addEventListener('blur', function() { state.settings.businessType = this.value; saveData(state, { autosaveToast: true }); });
+            document.getElementById('settingsCustomerPersona').addEventListener('blur', function() { state.settings.customerPersona = this.value; saveData(state, { autosaveToast: true }); });
+            document.getElementById('settingsKeyServices').addEventListener('blur', function() { state.settings.keyServices = this.value; saveData(state, { autosaveToast: true }); });
+            document.getElementById('settingsCompetitorUrls').addEventListener('blur', function() { state.settings.competitorUrls = this.value; saveData(state, { autosaveToast: true }); });
+            document.getElementById('settingsGeminiKey').addEventListener('input', function() { state.settings.geminiKey = this.value.trim(); saveData(state, { autosaveToast: true }); });
+            document.getElementById('settingsCallRail').addEventListener('change', function() { state.settings.callRail = this.value; saveData(state, { autosaveToast: true }); });
+            document.getElementById('settingsInvoca').addEventListener('change', function() { state.settings.invoca = this.value; saveData(state, { autosaveToast: true }); });
+            document.getElementById('settingsIndustry').addEventListener('blur', function() { state.settings.industry = this.value.trim(); saveData(state, { autosaveToast: true }); });
+            document.getElementById('settingsGoals').addEventListener('blur', function() { state.settings.primaryGoals = this.value.trim(); saveData(state, { autosaveToast: true }); });
+
+            document.getElementById('dbSaveBtn').addEventListener('click', function() {
+                var url = (document.getElementById('dbUrl') && document.getElementById('dbUrl').value) || '';
+                var anonKey = (document.getElementById('dbAnonKey') && document.getElementById('dbAnonKey').value) || '';
+                var statusEl = document.getElementById('dbStatus');
+                if (url.trim() && anonKey.trim()) {
+                    setDbConfig(url, anonKey);
+                    statusEl.textContent = 'Saved. Reloading from database…';
+                    loadData().then(function(s) {
+                        if (s) {
+                            state.contacts = s.contacts;
+                            state.deals = s.deals;
+                            state.teamMembers = s.teamMembers;
+                            state.tasks = s.tasks;
+                            state.emailTemplates = s.emailTemplates;
+                            state.settings = s.settings;
+                        }
+                        statusEl.textContent = 'Connected. Data synced.';
+                        renderDashboard();
+                        renderContacts();
+                        renderPipeline();
+                        renderTasks();
+                        renderEmailTemplates();
+                        openSettingsTab('database');
+                        lucide.createIcons();
+                    }).catch(function() {
+                        statusEl.textContent = 'Connection failed. Check URL and key.';
+                    });
+                } else {
+                    setDbConfig('', '');
+                    statusEl.textContent = 'Using local storage only (this device).';
+                }
+            });
+
+            // ——— Tasks ———
+            function renderTasks() {
+                var contactFilter = (document.getElementById('taskFilterContact') && document.getElementById('taskFilterContact').value) || '';
+                var statusFilter = (document.getElementById('taskFilterStatus') && document.getElementById('taskFilterStatus').value) || '';
+                var taskList = state.tasks.filter(function(t) {
+                    var matchContact = !contactFilter || t.contactId === contactFilter;
+                    var matchStatus = !statusFilter || t.status === statusFilter;
+                    return matchContact && matchStatus;
+                });
+                var contactSelect = document.getElementById('taskFilterContact');
+                if (contactSelect && contactSelect.options.length <= 1) {
+                    state.contacts.forEach(function(c) { var o = document.createElement('option'); o.value = c.id; o.textContent = c.name || c.id; contactSelect.appendChild(o); });
+                }
+                var tbody = document.getElementById('tasksTableBody');
+                if (tbody) tbody.innerHTML = taskList.map(function(t) {
+                    var contact = getContactById(t.contactId);
+                    var owner = getTeamMemberById(t.ownerId);
+                    return '<tr><td class="px-4 py-3">' + (t.title || '') + '</td><td class="px-4 py-3">' + (contact ? contact.name : '—') + '</td><td class="px-4 py-3">' + (t.dueDate || '—') + '</td><td class="px-4 py-3">' + (owner ? owner.name : '—') + '</td><td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs ' + (t.status === 'done' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800') + '">' + (t.status || 'todo') + '</span></td><td class="px-4 py-3"><button type="button" class="task-toggle p-1.5 text-slate-500 hover:text-amp-navy rounded" data-id="' + t.id + '" aria-label="Toggle done">' + (t.status === 'done' ? '✓' : '○') + '</button><button type="button" class="task-edit p-1.5 text-slate-500 hover:text-amp-navy rounded" data-id="' + t.id + '"><i data-lucide="pencil" class="w-4 h-4"></i></button></td></tr>';
+                }).join('');
+                tbody.querySelectorAll('.task-toggle').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var task = state.tasks.find(function(t) { return t.id === btn.getAttribute('data-id'); });
+                        if (task) { task.status = task.status === 'done' ? 'todo' : 'done'; saveData(state); renderTasks(); }
+                    });
+                });
+                tbody.querySelectorAll('.task-edit').forEach(function(btn) {
+                    btn.addEventListener('click', function() { openTaskModal(null, btn.getAttribute('data-id')); });
+                });
+                lucide.createIcons();
+            }
+            function openTaskModal(contactId, taskId) {
+                document.getElementById('taskModalTitle').textContent = taskId ? 'Edit task' : 'Add task';
+                document.getElementById('taskId').value = taskId || '';
+                var contactSelect = document.getElementById('taskContactId');
+                contactSelect.innerHTML = '<option value="">—</option>' + state.contacts.map(function(c) { return '<option value="' + c.id + '">' + (c.name || '') + '</option>'; }).join('');
+                var ownerSelect = document.getElementById('taskOwnerId');
+                ownerSelect.innerHTML = state.teamMembers.map(function(t) { return '<option value="' + t.id + '">' + t.name + '</option>'; }).join('');
+                if (contactId) contactSelect.value = contactId;
+                if (taskId) {
+                    var task = state.tasks.find(function(t) { return t.id === taskId; });
+                    if (task) {
+                        document.getElementById('taskTitle').value = task.title || '';
+                        document.getElementById('taskContactId').value = task.contactId || '';
+                        document.getElementById('taskDueDate').value = task.dueDate || '';
+                        document.getElementById('taskOwnerId').value = task.ownerId || (state.teamMembers[0] && state.teamMembers[0].id) || '';
+                    }
+                } else {
+                    document.getElementById('taskForm').reset();
+                    document.getElementById('taskId').value = '';
+                    if (contactId) document.getElementById('taskContactId').value = contactId;
+                }
+                document.getElementById('taskModal').classList.remove('hidden');
+                document.getElementById('taskModal').classList.add('flex');
+            }
+            function closeTaskModal() {
+                document.getElementById('taskModal').classList.add('hidden');
+                document.getElementById('taskModal').classList.remove('flex');
+            }
+            document.getElementById('taskForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                var id = document.getElementById('taskId').value;
+                var payload = { title: document.getElementById('taskTitle').value.trim(), contactId: document.getElementById('taskContactId').value || null, dueDate: document.getElementById('taskDueDate').value || null, ownerId: document.getElementById('taskOwnerId').value || null, status: 'todo' };
+                if (id) {
+                    var idx = state.tasks.findIndex(function(t) { return t.id === id; });
+                    if (idx !== -1) state.tasks[idx] = Object.assign({}, state.tasks[idx], payload);
+                } else {
+                    payload.id = 't' + Date.now();
+                    payload.createdAt = Date.now();
+                    state.tasks.push(payload);
+                }
+                saveData(state);
+                closeTaskModal();
+                renderTasks();
+                lucide.createIcons();
+            });
+            document.getElementById('closeTaskModal').addEventListener('click', closeTaskModal);
+            document.getElementById('cancelTaskModal').addEventListener('click', closeTaskModal);
+            document.getElementById('addTaskBtn').addEventListener('click', function() { openTaskModal(); });
+
+            // ——— Email templates ———
+            function renderEmailTemplates() {
+                var list = document.getElementById('emailTemplatesList');
+                if (!list) return;
+                list.innerHTML = state.emailTemplates.map(function(et) {
+                    return '<div class="crm-card p-4 flex justify-between items-start"><div><h4 class="font-medium text-amp-navy-dark">' + (et.name || '') + '</h4><p class="text-sm text-slate-500">' + (et.subject || '').slice(0, 60) + '…</p></div><div class="flex gap-2"><button type="button" class="template-edit px-3 py-1.5 text-amp-navy border border-amp-navy rounded-lg text-sm" data-id="' + et.id + '">Edit</button><button type="button" class="template-use px-3 py-1.5 bg-amp-gold text-amp-navy-dark rounded-lg text-sm font-medium" data-id="' + et.id + '">Use</button></div></div>';
+                }).join('');
+                list.querySelectorAll('.template-edit').forEach(function(btn) { btn.addEventListener('click', function() { openTemplateModal(btn.getAttribute('data-id')); }); });
+                list.querySelectorAll('.template-use').forEach(function(btn) { btn.addEventListener('click', function() { var et = state.emailTemplates.find(function(t) { return t.id === btn.getAttribute('data-id'); }); if (et) window.alert('Template "' + et.name + '" ready. In production, this would open a compose window with subject/body filled.'); }); });
+                lucide.createIcons();
+            }
+            function openTemplateModal(templateId) {
+                document.getElementById('templateModalTitle').textContent = templateId ? 'Edit template' : 'New email template';
+                document.getElementById('templateId').value = templateId || '';
+                if (templateId) {
+                    var et = state.emailTemplates.find(function(t) { return t.id === templateId; });
+                    if (et) {
+                        document.getElementById('templateName').value = et.name || '';
+                        document.getElementById('templateSubject').value = et.subject || '';
+                        document.getElementById('templateBody').value = et.body || '';
+                    }
+                } else document.getElementById('templateForm').reset();
+                document.getElementById('templateModal').classList.remove('hidden');
+                document.getElementById('templateModal').classList.add('flex');
+            }
+            function closeTemplateModal() {
+                document.getElementById('templateModal').classList.add('hidden');
+                document.getElementById('templateModal').classList.remove('flex');
+            }
+            document.getElementById('templateForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                var id = document.getElementById('templateId').value;
+                var payload = { name: document.getElementById('templateName').value.trim(), subject: document.getElementById('templateSubject').value.trim(), body: document.getElementById('templateBody').value.trim() };
+                if (id) {
+                    var idx = state.emailTemplates.findIndex(function(t) { return t.id === id; });
+                    if (idx !== -1) state.emailTemplates[idx] = Object.assign({}, state.emailTemplates[idx], payload);
+                } else {
+                    payload.id = 'et' + Date.now();
+                    state.emailTemplates.push(payload);
+                }
+                saveData(state);
+                closeTemplateModal();
+                renderEmailTemplates();
+            });
+            document.getElementById('closeTemplateModal').addEventListener('click', closeTemplateModal);
+            document.getElementById('cancelTemplateModal').addEventListener('click', closeTemplateModal);
+            document.getElementById('addTemplateBtn').addEventListener('click', function() { openTemplateModal(); });
+
+            (function() {
+                var TEMPLATE_VARS = ['name','company','contact.name','contact.email','contact.phone','contact.company','contact.notes','contact.stage','contact.lead_source','contact.tags','deal.name','deal.value','deal.stage','company.name','company.address','company.business_type','company.industry','meeting.title','meeting.date','meeting.details','date.today','time.now'];
+                var menuEl = document.getElementById('templateVariableMenu');
+                var activeEl = null;
+                var slashStart = 0;
+                var selectedIndex = 0;
+
+                function openVariableMenu(el) {
+                    activeEl = el;
+                    var val = el.value;
+                    var start = el.selectionStart;
+                    var slashPos = val.lastIndexOf('/', start - 1);
+                    if (slashPos === -1) return;
+                    slashStart = slashPos;
+                    var filter = val.slice(slashPos + 1, start).toLowerCase();
+                    var filtered = TEMPLATE_VARS.filter(function(v) { return v.toLowerCase().indexOf(filter) !== -1; });
+                    if (filtered.length === 0) { hideVariableMenu(); return; }
+                    selectedIndex = 0;
+                    menuEl.innerHTML = filtered.map(function(v, i) {
+                        return '<div class="template-var-option px-3 py-2 text-sm cursor-pointer hover:bg-amp-gold-light ' + (i === 0 ? 'bg-amp-gold-light' : '') + '" role="option" data-var="' + v.replace(/"/g, '&quot;') + '" data-index="' + i + '">{{' + v + '}}</div>';
+                    }).join('');
+                    var rect = el.getBoundingClientRect();
+                    menuEl.style.top = (rect.bottom + 4) + 'px';
+                    menuEl.style.left = rect.left + 'px';
+                    menuEl.classList.remove('hidden');
+                }
+
+                function hideVariableMenu() {
+                    menuEl.classList.add('hidden');
+                    activeEl = null;
+                }
+
+                function insertVariable(varName) {
+                    if (!activeEl) return;
+                    var val = activeEl.value;
+                    var start = activeEl.selectionStart;
+                    var end = activeEl.selectionEnd;
+                    var insert = '{{' + varName + '}}';
+                    var newVal = val.slice(0, slashStart) + insert + val.slice(end);
+                    activeEl.value = newVal;
+                    activeEl.selectionStart = activeEl.selectionEnd = slashStart + insert.length;
+                    activeEl.focus();
+                    hideVariableMenu();
+                }
+
+                function updateSelectionHighlight() {
+                    var options = menuEl.querySelectorAll('.template-var-option');
+                    options.forEach(function(o, i) { o.classList.toggle('bg-amp-gold-light', i === selectedIndex); });
+                }
+
+                ['templateSubject', 'templateBody'].forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (!el) return;
+                    el.addEventListener('input', function() {
+                        var val = this.value;
+                        var start = this.selectionStart;
+                        var slashPos = val.lastIndexOf('/', start - 1);
+                        if (slashPos === -1) { hideVariableMenu(); return; }
+                        var afterSlash = val.slice(slashPos + 1, start);
+                        if (/\s/.test(afterSlash)) { hideVariableMenu(); return; }
+                        openVariableMenu(this);
+                    });
+                    el.addEventListener('keydown', function(e) {
+                        if (!menuEl.classList.contains('hidden') && activeEl === this) {
+                            var options = menuEl.querySelectorAll('.template-var-option');
+                            if (e.key === 'ArrowDown') {
+                                e.preventDefault();
+                                selectedIndex = Math.min(selectedIndex + 1, options.length - 1);
+                                updateSelectionHighlight();
+                                options[selectedIndex] && options[selectedIndex].scrollIntoView({ block: 'nearest' });
+                                return;
+                            }
+                            if (e.key === 'ArrowUp') {
+                                e.preventDefault();
+                                selectedIndex = Math.max(selectedIndex - 1, 0);
+                                updateSelectionHighlight();
+                                options[selectedIndex] && options[selectedIndex].scrollIntoView({ block: 'nearest' });
+                                return;
+                            }
+                            if (e.key === 'Enter') {
+                                e.preventDefault();
+                                var opt = options[selectedIndex];
+                                if (opt) insertVariable(opt.getAttribute('data-var'));
+                                return;
+                            }
+                            if (e.key === 'Escape') {
+                                e.preventDefault();
+                                hideVariableMenu();
+                                return;
+                            }
+                        }
+                        if (e.key === '/') {
+                            setTimeout(function() { openVariableMenu(el); }, 0);
+                        }
+                    });
+                });
+
+                menuEl.addEventListener('click', function(e) {
+                    var opt = e.target.closest('.template-var-option');
+                    if (opt) insertVariable(opt.getAttribute('data-var'));
+                });
+
+                document.getElementById('templateModal').addEventListener('click', function(e) {
+                    if (menuEl.classList.contains('hidden')) return;
+                    if (!menuEl.contains(e.target) && e.target.id !== 'templateSubject' && e.target.id !== 'templateBody') hideVariableMenu();
+                });
+            })();
+
+            // ——— Reports ———
+            function setReportContent(report) {
+                var content = document.getElementById('reportContent');
+                var openDeals = state.deals.filter(function(d) { return d.stageId !== 'won' && d.stageId !== 'lost'; });
+                var won = state.deals.filter(function(d) { return d.stageId === 'won'; });
+                var lost = state.deals.filter(function(d) { return d.stageId === 'lost'; });
+                if (report === 'sales') {
+                    content.innerHTML = '<h3 class="font-semibold text-amp-navy-dark mb-4">Sales</h3><div class="grid grid-cols-2 md:grid-cols-4 gap-4"><div class="p-4 bg-amp-gold-light/40 rounded-lg"><p class="text-sm text-slate-600">Pipeline value</p><p class="text-xl font-bold text-amp-navy-dark">$' + openDeals.reduce(function(s,d){ return s + (d.value||0); }, 0).toLocaleString() + '</p></div><div class="p-4 bg-green-100 rounded-lg"><p class="text-sm text-slate-600">Won</p><p class="text-xl font-bold text-green-700">' + won.length + '</p></div><div class="p-4 bg-red-100 rounded-lg"><p class="text-sm text-slate-600">Lost</p><p class="text-xl font-bold text-red-700">' + lost.length + '</p></div><div class="p-4 bg-slate-100 rounded-lg"><p class="text-sm text-slate-600">Win rate</p><p class="text-xl font-bold">' + (won.length + lost.length ? Math.round(100 * won.length / (won.length + lost.length)) : 0) + '%</p></div></div>';
+                } else if (report === 'marketing') {
+                    var bySource = {};
+                    state.contacts.forEach(function(c) {
+                        var src = (c.leadSource && c.leadSource.trim()) ? c.leadSource : 'Unknown';
+                        bySource[src] = (bySource[src] || 0) + 1;
+                    });
+                    content.innerHTML = '<h3 class="font-semibold text-amp-navy-dark mb-4">Marketing — Lead sources</h3><div class="space-y-2">' + Object.keys(bySource).map(function(s) { return '<div class="flex justify-between p-2 border border-slate-200 rounded"><span>' + s + '</span><span class="font-semibold">' + bySource[s] + '</span></div>'; }).join('') + '</div>';
+                } else if (report === 'operations') {
+                    content.innerHTML = '<h3 class="font-semibold text-amp-navy-dark mb-4">Operations</h3><p class="text-slate-600 mb-4">Response time: Track first contact time in production (first_contacted_at vs created_at) to measure speed to first touch.</p><p class="text-sm text-slate-500">Task completion and overdue tasks: ' + state.tasks.filter(function(t){ return t.status === 'todo' && t.dueDate && t.dueDate < new Date().toISOString().slice(0,10); }).length + ' overdue.</p>';
+                }
+            }
+            function renderReports() {
+                document.querySelectorAll('.reports-tab').forEach(function(btn) {
+                    btn.classList.remove('active');
+                    if (btn.getAttribute('data-report') === 'sales') btn.classList.add('active');
+                });
+                setReportContent('sales');
+            }
+            document.querySelectorAll('.reports-tab').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.reports-tab').forEach(function(b) { b.classList.remove('active'); });
+                    btn.classList.add('active');
+                    setReportContent(btn.getAttribute('data-report'));
+                });
+            });
+
+            // ——— AI Assistant (Gemini) ———
+            document.getElementById('aiAssistantBtn').addEventListener('click', function() {
+                var panel = document.getElementById('aiAssistantPanel');
+                panel.classList.toggle('hidden');
+                panel.classList.add('flex');
+            });
+            document.getElementById('closeAiPanel').addEventListener('click', function() {
+                document.getElementById('aiAssistantPanel').classList.add('hidden');
+            });
+            function buildAiSystemContext() {
+                var s = state.settings || {};
+                var parts = [];
+                parts.push('You are an expert AI assistant for Alchemy CRM, a CRM for small and medium businesses. Your role is to:');
+                parts.push('1. Recommend how to best use the CRM (best practices, features to use, how to train teams).');
+                parts.push('2. Improve workflows (follow-up sequences, task habits, pipeline stages, response time).');
+                parts.push('3. Create or suggest workflows tailored to the company\'s goals and industry (e.g. lead nurturing, qualification, closing).');
+                parts.push('Keep answers concise, actionable, and step-by-step when suggesting workflows.');
+                if (s.companyName) parts.push('Company name: ' + s.companyName + '.');
+                if (s.industry) parts.push('Industry: ' + s.industry + '.');
+                if (s.primaryGoals) parts.push('Primary goals: ' + s.primaryGoals + '.');
+                parts.push('The CRM has: contacts (with stages, tags, owners), deals (pipeline stages), tasks (linked to contacts), email templates, and reports.');
+                return parts.join(' ');
+            }
+
+            document.querySelectorAll('.ai-quick-prompt').forEach(function(btn) {
+                btn.addEventListener('click', function() {
+                    var promptEl = document.getElementById('aiPrompt');
+                    if (promptEl) {
+                        promptEl.value = btn.getAttribute('data-prompt') || '';
+                        promptEl.focus();
+                    }
+                });
+            });
+
+            document.getElementById('aiSendBtn').addEventListener('click', function() {
+                var key = (state.settings && state.settings.geminiKey) || (document.getElementById('settingsGeminiKey') && document.getElementById('settingsGeminiKey').value);
+                key = key && key.trim();
+                if (!key) {
+                    document.getElementById('aiResponse').textContent = 'Enter your Gemini API key in Settings → Integrations to use the AI. Get a key at Google AI Studio (see link in Settings).';
+                    document.getElementById('aiResponse').classList.remove('hidden');
+                    return;
+                }
+                var prompt = (document.getElementById('aiPrompt') && document.getElementById('aiPrompt').value) || '';
+                if (!prompt) {
+                    document.getElementById('aiResponse').textContent = 'Type a question or click a suggestion above.';
+                    document.getElementById('aiResponse').classList.remove('hidden');
+                    return;
+                }
+                var systemContext = buildAiSystemContext();
+                var fullPrompt = systemContext + '\n\nUser request: ' + prompt;
+                var url = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' + encodeURIComponent(key);
+                document.getElementById('aiResponse').textContent = 'Thinking…';
+                document.getElementById('aiResponse').classList.remove('hidden');
+                fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: fullPrompt }] }], generationConfig: { maxOutputTokens: 1024 } })
+                }).then(function(r) { return r.json(); }).then(function(data) {
+                    var text = (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts && data.candidates[0].content.parts[0]) ? data.candidates[0].content.parts[0].text : (data.error ? 'Error: ' + (data.error.message || 'Check API key.') : 'No response.');
+                    document.getElementById('aiResponse').textContent = text;
+                }).catch(function(err) {
+                    document.getElementById('aiResponse').textContent = 'Network error. Add your API key in Settings → Integrations. For production, use a server-side proxy.';
+                });
+            });
+
+            // Init: load from DB if connected, then render
+            loadData().then(function(s) {
+                if (s) {
+                    state.contacts = s.contacts;
+                    state.deals = s.deals;
+                    state.teamMembers = s.teamMembers;
+                    state.tasks = s.tasks;
+                    state.emailTemplates = s.emailTemplates;
+                    state.settings = s.settings;
+                }
+                renderDashboard();
+                renderContacts();
+                if (document.getElementById('page-pipeline') && !document.getElementById('page-pipeline').classList.contains('hidden')) renderPipeline();
+                lucide.createIcons();
+            });
+        })();
+    </script>
+</body>
+</html>
