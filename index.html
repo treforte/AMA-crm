@@ -270,6 +270,33 @@
                         Add deal
                     </button>
                 </div>
+                <div id="pipelineFiltersBar" class="crm-card p-3 mb-4 flex flex-wrap items-center gap-3">
+                    <span class="text-sm font-medium text-slate-600">Filters:</span>
+                    <select id="pipelineFilterOwner" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" title="Contact owner">
+                        <option value="">All owners</option>
+                    </select>
+                    <select id="pipelineFilterStage" class="px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white" title="Deal stage">
+                        <option value="">All stages</option>
+                    </select>
+                    <label class="flex items-center gap-1.5 text-sm text-slate-600">
+                        <span>Created from</span>
+                        <input type="date" id="pipelineFilterDateFrom" class="px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                    </label>
+                    <label class="flex items-center gap-1.5 text-sm text-slate-600">
+                        <span>to</span>
+                        <input type="date" id="pipelineFilterDateTo" class="px-3 py-2 border border-slate-200 rounded-lg text-sm">
+                    </label>
+                    <label class="flex items-center gap-1.5 text-sm text-slate-600">
+                        <span>Value $</span>
+                        <input type="number" id="pipelineFilterValueMin" class="w-24 px-3 py-2 border border-slate-200 rounded-lg text-sm" placeholder="Min" min="0" step="100">
+                    </label>
+                    <label class="flex items-center gap-1.5 text-sm text-slate-600">
+                        <span>–</span>
+                        <input type="number" id="pipelineFilterValueMax" class="w-24 px-3 py-2 border border-slate-200 rounded-lg text-sm" placeholder="Max" min="0" step="100">
+                    </label>
+                    <button type="button" id="pipelineFilterClear" class="px-3 py-2 text-sm text-slate-600 hover:text-amp-navy border border-slate-200 rounded-lg hover:bg-slate-50">Clear filters</button>
+                    <span id="pipelineFilterSummary" class="text-xs text-slate-500 ml-auto"></span>
+                </div>
                 <div class="overflow-x-auto pb-4">
                     <div id="pipelineColumns" class="flex gap-4 min-w-max"></div>
                 </div>
@@ -703,7 +730,8 @@
                     });
                     if (!contacts.length) contacts = getDefaultContacts();
                     var deals = dealRows.map(function(r) {
-                        return { id: r.id, contactId: r.contact_id, name: r.name, value: Number(r.value) || 0, stageId: r.stage_id || 'lead', ownerId: r.owner_id || (teamMembers[0] && teamMembers[0].id) };
+                        var created = r.created_at != null ? (typeof r.created_at === 'number' ? r.created_at : new Date(r.created_at).getTime()) : null;
+                        return { id: r.id, contactId: r.contact_id, name: r.name, value: Number(r.value) || 0, stageId: r.stage_id || 'lead', ownerId: r.owner_id || (teamMembers[0] && teamMembers[0].id), createdAt: created };
                     });
                     if (!deals.length) deals = getDefaultDeals();
                     var tasks = taskRows.map(function(r) {
@@ -744,7 +772,10 @@
                 var contactRows = (data.contacts || []).map(function(c) {
                     return { id: c.id, name: c.name, email: c.email || null, phone: c.phone || null, company: c.company || null, stage_id: c.stageId || 'lead', owner_id: c.ownerId || null, tags: c.tags || [], lead_source: c.leadSource || null, notes: c.notes || null, created_at: c.createdAt != null ? c.createdAt : null };
                 });
-                var dealRows = (data.deals || []).map(function(d) { return { id: d.id, contact_id: d.contactId, name: d.name, value: d.value || 0, stage_id: d.stageId || 'lead', owner_id: d.ownerId || null }; });
+                var dealRows = (data.deals || []).map(function(d) {
+                    var created = d.createdAt != null ? new Date(d.createdAt).toISOString() : null;
+                    return { id: d.id, contact_id: d.contactId, name: d.name, value: d.value || 0, stage_id: d.stageId || 'lead', owner_id: d.ownerId || null, created_at: created };
+                });
                 var taskRows = (data.tasks || []).map(function(t) { return { id: t.id, contact_id: t.contactId, title: t.title, due_date: t.dueDate || null, owner_id: t.ownerId, status: t.status || 'todo', created_at: t.createdAt }; });
                 var templateRows = (data.emailTemplates || []).map(function(e) { return { id: e.id, name: e.name, subject: e.subject, body: e.body }; });
                 var s = data.settings || {};
@@ -1022,11 +1053,52 @@
             }
 
             // ——— Pipeline (Kanban) ———
+            function getFilteredPipelineDeals() {
+                var ownerEl = document.getElementById('pipelineFilterOwner');
+                var stageEl = document.getElementById('pipelineFilterStage');
+                var dateFromEl = document.getElementById('pipelineFilterDateFrom');
+                var dateToEl = document.getElementById('pipelineFilterDateTo');
+                var valueMinEl = document.getElementById('pipelineFilterValueMin');
+                var valueMaxEl = document.getElementById('pipelineFilterValueMax');
+                var ownerId = ownerEl ? ownerEl.value : '';
+                var stageId = stageEl ? stageEl.value : '';
+                var dateFrom = dateFromEl && dateFromEl.value ? new Date(dateFromEl.value).getTime() : null;
+                var dateTo = null;
+                if (dateToEl && dateToEl.value) { var d = new Date(dateToEl.value); d.setHours(23, 59, 59, 999); dateTo = d.getTime(); }
+                var valueMin = valueMinEl && valueMinEl.value !== '' ? parseInt(valueMinEl.value, 10) : null;
+                var valueMax = valueMaxEl && valueMaxEl.value !== '' ? parseInt(valueMaxEl.value, 10) : null;
+                return state.deals.filter(function(d) {
+                    if (ownerId && d.ownerId !== ownerId) return false;
+                    if (stageId && d.stageId !== stageId) return false;
+                    var created = d.createdAt != null ? d.createdAt : 0;
+                    if (dateFrom != null && created < dateFrom) return false;
+                    if (dateTo != null && created > dateTo) return false;
+                    var val = d.value != null ? d.value : 0;
+                    if (valueMin != null && val < valueMin) return false;
+                    if (valueMax != null && val > valueMax) return false;
+                    return true;
+                });
+            }
+
             function renderPipeline() {
                 var container = document.getElementById('pipelineColumns');
                 if (!container) return;
+                var deals = getFilteredPipelineDeals();
+                var totalDeals = state.deals.length;
+                var summaryEl = document.getElementById('pipelineFilterSummary');
+                if (summaryEl) summaryEl.textContent = deals.length === totalDeals ? totalDeals + ' deals' : 'Showing ' + deals.length + ' of ' + totalDeals + ' deals';
+
+                var ownerSelect = document.getElementById('pipelineFilterOwner');
+                var stageSelect = document.getElementById('pipelineFilterStage');
+                var savedOwner = ownerSelect ? ownerSelect.value : '';
+                var savedStage = stageSelect ? stageSelect.value : '';
+                ownerSelect.innerHTML = '<option value="">All owners</option>' + state.teamMembers.map(function(t) { return '<option value="' + t.id + '">' + (t.name || t.id) + '</option>'; }).join('');
+                stageSelect.innerHTML = '<option value="">All stages</option>' + STAGES.map(function(s) { return '<option value="' + s.id + '">' + s.name + '</option>'; }).join('');
+                if (ownerSelect) ownerSelect.value = savedOwner;
+                if (stageSelect) stageSelect.value = savedStage;
+
                 container.innerHTML = STAGES.map(function(stage) {
-                    var dealsInStage = state.deals.filter(function(d) { return d.stageId === stage.id; });
+                    var dealsInStage = deals.filter(function(d) { return d.stageId === stage.id; });
                     var totalInStage = dealsInStage.reduce(function(s, d) { return s + (d.value || 0); }, 0);
                     var cardsHtml = dealsInStage.map(function(d) {
                         var contact = getContactById(d.contactId);
@@ -1184,11 +1256,22 @@
                     payload.id = 'c' + Date.now();
                     payload.createdAt = Date.now();
                     state.contacts.push(payload);
+                    var dealName = (payload.company && payload.name) ? payload.company + ' — ' + payload.name : (payload.name || payload.company || 'New deal');
+                    state.deals.push({
+                        id: 'd' + Date.now(),
+                        contactId: payload.id,
+                        name: dealName,
+                        value: 0,
+                        stageId: payload.stageId || 'lead',
+                        ownerId: payload.ownerId || (state.teamMembers[0] && state.teamMembers[0].id) || null,
+                        createdAt: Date.now()
+                    });
                 }
                 saveData(state);
                 closeContactModal();
                 renderDashboard();
                 renderContacts();
+                renderPipeline();
                 lucide.createIcons();
             });
 
@@ -1273,12 +1356,39 @@
                     name: name,
                     value: value,
                     stageId: 'lead',
-                    ownerId: state.teamMembers[0] ? state.teamMembers[0].id : null
+                    ownerId: state.teamMembers[0] ? state.teamMembers[0].id : null,
+                    createdAt: Date.now()
                 });
                 saveData(state);
                 renderPipeline();
                 renderDashboard();
             });
+
+            (function() {
+                function applyPipelineFilters() { renderPipeline(); }
+                var ownerEl = document.getElementById('pipelineFilterOwner');
+                var stageEl = document.getElementById('pipelineFilterStage');
+                var dateFromEl = document.getElementById('pipelineFilterDateFrom');
+                var dateToEl = document.getElementById('pipelineFilterDateTo');
+                var valueMinEl = document.getElementById('pipelineFilterValueMin');
+                var valueMaxEl = document.getElementById('pipelineFilterValueMax');
+                var clearBtn = document.getElementById('pipelineFilterClear');
+                if (ownerEl) ownerEl.addEventListener('change', applyPipelineFilters);
+                if (stageEl) stageEl.addEventListener('change', applyPipelineFilters);
+                if (dateFromEl) dateFromEl.addEventListener('change', applyPipelineFilters);
+                if (dateToEl) dateToEl.addEventListener('change', applyPipelineFilters);
+                if (valueMinEl) { valueMinEl.addEventListener('input', applyPipelineFilters); valueMinEl.addEventListener('change', applyPipelineFilters); }
+                if (valueMaxEl) { valueMaxEl.addEventListener('input', applyPipelineFilters); valueMaxEl.addEventListener('change', applyPipelineFilters); }
+                if (clearBtn) clearBtn.addEventListener('click', function() {
+                    if (ownerEl) ownerEl.value = '';
+                    if (stageEl) stageEl.value = '';
+                    if (dateFromEl) dateFromEl.value = '';
+                    if (dateToEl) dateToEl.value = '';
+                    if (valueMinEl) valueMinEl.value = '';
+                    if (valueMaxEl) valueMaxEl.value = '';
+                    renderPipeline();
+                });
+            })();
 
             // ——— Settings tabs ———
             function openSettingsTab(tabId) {
