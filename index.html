@@ -244,6 +244,7 @@
                                     <th class="px-4 py-3 text-left hidden md:table-cell">Company</th>
                                     <th class="px-4 py-3 text-left">Stage</th>
                                     <th class="px-4 py-3 text-left hidden lg:table-cell">Owner</th>
+                                    <th class="px-4 py-3 text-right hidden md:table-cell">Deal value</th>
                                     <th class="px-4 py-3 text-left hidden lg:table-cell">Tags</th>
                                     <th class="px-4 py-3 text-right w-24">Actions</th>
                                 </tr>
@@ -561,6 +562,46 @@
         </div>
     </div>
 
+    <!-- Add/Edit Deal Modal -->
+    <div id="dealModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50" aria-modal="true" role="dialog">
+        <div class="crm-card w-full max-w-md max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-lg font-semibold text-amp-navy-dark" id="dealModalTitle">Add deal</h3>
+                <button type="button" id="closeDealModal" class="p-2 -m-2 text-slate-400 hover:text-slate-600 rounded-lg" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="dealForm" class="p-4 space-y-4">
+                <input type="hidden" id="dealId">
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Contact</label><select id="dealContactId" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-white"><option value="">— Select contact —</option></select></div>
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Deal name *</label><input type="text" id="dealName" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg" placeholder="e.g. Website project"></div>
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Deal value ($)</label><input type="number" id="dealValue" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg" min="0" step="100" value="0" placeholder="0"></div>
+                <div id="dealStageOwnerWrap" class="hidden"><label class="block text-sm font-medium text-slate-700 mb-1">Stage</label><select id="dealStageId" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-white"></select><label class="block text-sm font-medium text-slate-700 mb-1 mt-2">Owner</label><select id="dealOwnerId" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-white"></select></div>
+                <div class="flex gap-2 pt-2"><button type="submit" class="flex-1 px-4 py-2.5 bg-amp-navy text-white rounded-lg font-medium">Save deal</button><button type="button" id="cancelDealModal" class="px-4 py-2.5 border border-slate-200 rounded-lg font-medium hover:bg-slate-50">Cancel</button></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add User Modal -->
+    <div id="userModal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/50" aria-modal="true" role="dialog">
+        <div class="crm-card w-full max-w-md max-h-[90vh] overflow-y-auto" onclick="event.stopPropagation()">
+            <div class="flex items-center justify-between p-4 border-b border-slate-200">
+                <h3 class="text-lg font-semibold text-amp-navy-dark">Add user</h3>
+                <button type="button" id="closeUserModal" class="p-2 -m-2 text-slate-400 hover:text-slate-600 rounded-lg" aria-label="Close"><i data-lucide="x" class="w-5 h-5"></i></button>
+            </div>
+            <form id="userForm" class="p-4 space-y-4">
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Name *</label><input type="text" id="userName" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg" placeholder="Full name"></div>
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Email *</label><input type="email" id="userEmail" required class="w-full px-4 py-2.5 border border-slate-200 rounded-lg" placeholder="user@company.com"></div>
+                <div><label class="block text-sm font-medium text-slate-700 mb-1">Role</label><select id="userRole" class="w-full px-4 py-2.5 border border-slate-200 rounded-lg bg-white"><option value="Member">Member</option><option value="Admin">Admin</option><option value="Viewer">Viewer</option></select></div>
+                <div id="userTempPasswordWrap" class="hidden p-3 bg-amp-gold-light/40 rounded-lg border border-amp-gold/30">
+                    <p class="text-sm font-medium text-amp-navy-dark mb-1">Login credentials (save or send to user)</p>
+                    <p class="text-xs text-slate-600 mb-2">When you enable Supabase Auth, use this password for first login; user can reset it after.</p>
+                    <p class="text-sm font-mono bg-white px-2 py-1 rounded border break-all" id="userTempPasswordDisplay"></p>
+                    <button type="button" id="userCopyPassword" class="mt-2 px-3 py-1.5 text-sm bg-amp-navy text-white rounded-lg">Copy password</button>
+                </div>
+                <div class="flex gap-2 pt-2"><button type="submit" class="flex-1 px-4 py-2.5 bg-amp-navy text-white rounded-lg font-medium">Create user</button><button type="button" id="cancelUserModal" class="px-4 py-2.5 border border-slate-200 rounded-lg font-medium hover:bg-slate-50">Cancel</button></div>
+            </form>
+        </div>
+    </div>
+
     <!-- Contact / Deal detail drawer (click from Kanban or Contacts) -->
     <div id="contactDetailDrawer" class="fixed inset-y-0 right-0 z-40 w-full max-w-lg bg-white shadow-xl detail-drawer transform translate-x-full flex flex-col" aria-hidden="true">
         <div class="flex items-center justify-between p-4 border-b border-slate-200 flex-shrink-0">
@@ -856,6 +897,11 @@
                 return state.deals.find(function(d) { return d.id === id; });
             }
 
+            function getContactDealValue(contactId) {
+                if (!contactId) return 0;
+                return state.deals.filter(function(d) { return d.contactId === contactId; }).reduce(function(sum, d) { return sum + (d.value || 0); }, 0);
+            }
+
             function deleteContact(contactId) {
                 if (!contactId) return;
                 if (!window.confirm('Delete this contact? Their deals will be unlinked and their tasks removed.')) return;
@@ -1050,7 +1096,7 @@
                     var stage = getStageById(c.stageId);
                     var owner = getTeamMemberById(c.ownerId);
                     var tagsHtml = (c.tags && c.tags.length) ? c.tags.map(function(t) { return '<span class="inline-flex px-2 py-0.5 rounded text-xs bg-amp-gold-light text-amp-gold-dark">' + t + '</span>'; }).join(' ') : '—';
-                    return '<tr><td class="px-4 py-3"><input type="checkbox" class="contact-checkbox rounded border-slate-300 text-amp-navy focus:ring-amp-gold" data-id="' + c.id + '" aria-label="Select ' + (c.name || '') + '"></td><td class="px-4 py-3 font-medium"><button type="button" class="contact-view text-left hover:text-amp-gold-dark" data-id="' + c.id + '">' + (c.name || '—') + '</button></td><td class="px-4 py-3 hidden sm:table-cell">' + (c.email || '—') + '</td><td class="px-4 py-3 hidden md:table-cell">' + (c.company || '—') + '</td><td class="px-4 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (stage ? stage.color + ' text-slate-800' : '') + '">' + (stage ? stage.name : c.stageId) + '</span></td><td class="px-4 py-3 hidden lg:table-cell">' + (owner ? owner.name : '—') + '</td><td class="px-4 py-3 hidden lg:table-cell">' + tagsHtml + '</td><td class="px-4 py-3 text-right"><span class="inline-flex items-center justify-end gap-0.5"><button type="button" class="contact-edit p-2 text-slate-500 hover:text-amp-navy rounded" data-id="' + c.id + '" aria-label="Edit"><i data-lucide="pencil" class="w-4 h-4"></i></button><button type="button" class="contact-delete p-2 text-slate-400 hover:text-red-600 rounded" data-id="' + c.id + '" aria-label="Delete contact"><i data-lucide="trash-2" class="w-4 h-4"></i></button></span></td></tr>';
+                    return '<tr><td class="px-4 py-3"><input type="checkbox" class="contact-checkbox rounded border-slate-300 text-amp-navy focus:ring-amp-gold" data-id="' + c.id + '" aria-label="Select ' + (c.name || '') + '"></td><td class="px-4 py-3 font-medium"><button type="button" class="contact-view text-left hover:text-amp-gold-dark" data-id="' + c.id + '">' + (c.name || '—') + '</button></td><td class="px-4 py-3 hidden sm:table-cell">' + (c.email || '—') + '</td><td class="px-4 py-3 hidden md:table-cell">' + (c.company || '—') + '</td><td class="px-4 py-3"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-medium ' + (stage ? stage.color + ' text-slate-800' : '') + '">' + (stage ? stage.name : c.stageId) + '</span></td><td class="px-4 py-3 hidden lg:table-cell">' + (owner ? owner.name : '—') + '</td><td class="px-4 py-3 text-right hidden md:table-cell font-semibold text-amp-gold-dark">$' + getContactDealValue(c.id).toLocaleString() + '</td><td class="px-4 py-3 hidden lg:table-cell">' + tagsHtml + '</td><td class="px-4 py-3 text-right"><span class="inline-flex items-center justify-end gap-0.5"><button type="button" class="contact-edit p-2 text-slate-500 hover:text-amp-navy rounded" data-id="' + c.id + '" aria-label="Edit"><i data-lucide="pencil" class="w-4 h-4"></i></button><button type="button" class="contact-delete p-2 text-slate-400 hover:text-red-600 rounded" data-id="' + c.id + '" aria-label="Delete contact"><i data-lucide="trash-2" class="w-4 h-4"></i></button></span></td></tr>';
                 }).join('');
 
                 document.getElementById('contactsPaginationInfo').textContent = 'Showing ' + (start + 1) + '–' + Math.min(start + contactsPerPage, total) + ' of ' + total;
@@ -1153,7 +1199,7 @@
                     var cardsHtml = dealsInStage.map(function(d) {
                         var contact = getContactById(d.contactId);
                         var cid = (contact && contact.id) || '';
-                        return '<div class="pipeline-card p-3 mb-2 relative group" data-deal-id="' + d.id + '" data-contact-id="' + cid + '" draggable="true" role="button" tabindex="0"><button type="button" class="pipeline-card-delete absolute top-1.5 right-1.5 p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition" data-deal-id="' + d.id + '" aria-label="Delete deal"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button><p class="font-medium text-slate-800 pr-6">' + (d.name || 'Deal') + '</p><p class="text-sm text-slate-500">' + (contact ? contact.company || contact.name : '—') + '</p><p class="text-sm font-semibold text-amp-gold-dark mt-1">$' + (d.value || 0).toLocaleString() + '</p></div>';
+                        return '<div class="pipeline-card p-3 mb-2 relative group" data-deal-id="' + d.id + '" data-contact-id="' + cid + '" draggable="true" role="button" tabindex="0"><span class="absolute top-1.5 right-1.5 flex gap-0.5 opacity-0 group-hover:opacity-100 transition"><button type="button" class="pipeline-card-edit p-1 rounded text-slate-400 hover:text-amp-navy hover:bg-slate-100" data-deal-id="' + d.id + '" aria-label="Edit deal"><i data-lucide="pencil" class="w-3.5 h-3.5"></i></button><button type="button" class="pipeline-card-delete p-1 rounded text-slate-400 hover:text-red-600 hover:bg-red-50" data-deal-id="' + d.id + '" aria-label="Delete deal"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button></span><p class="font-medium text-slate-800 pr-14">' + (d.name || 'Deal') + '</p><p class="text-sm text-slate-500">' + (contact ? contact.company || contact.name : '—') + '</p><p class="text-sm font-semibold text-amp-gold-dark mt-1">$' + (d.value || 0).toLocaleString() + '</p></div>';
                     }).join('');
                     var dropZoneClass = 'p-2 min-h-[120px] pipeline-drop-zone' + (dealsInStage.length === 0 ? ' empty' : '');
                     return '<div class="pipeline-column flex-shrink-0" data-stage-id="' + stage.id + '"><div class="p-3 border-b border-slate-200 flex justify-between items-center"><div><h4 class="font-semibold text-amp-navy-dark">' + stage.name + '</h4><p class="text-xs text-slate-500">' + dealsInStage.length + ' deals · $' + totalInStage.toLocaleString() + '</p></div></div><div class="' + dropZoneClass + '">' + cardsHtml + '</div></div>';
@@ -1170,6 +1216,9 @@
                 });
                 container.querySelectorAll('.pipeline-card-delete').forEach(function(btn) {
                     btn.addEventListener('click', function(e) { e.stopPropagation(); e.preventDefault(); deleteDeal(btn.getAttribute('data-deal-id')); });
+                });
+                container.querySelectorAll('.pipeline-card-edit').forEach(function(btn) {
+                    btn.addEventListener('click', function(e) { e.stopPropagation(); e.preventDefault(); closeDetailDrawer(); openDealModal(btn.getAttribute('data-deal-id')); });
                 });
                 container.querySelectorAll('.pipeline-column').forEach(function(col) {
                     var zone = col.querySelector('.pipeline-drop-zone');
@@ -1352,11 +1401,11 @@
                     var stage = getStageById(contact.stageId);
                     var owner = getTeamMemberById(contact.ownerId);
                     html += '<div class="space-y-4"><div class="flex items-start justify-between"><div><h4 class="text-lg font-semibold text-amp-navy-dark">' + (contact.name || '—') + '</h4><p class="text-slate-600">' + (contact.company || '') + '</p></div><span class="inline-flex gap-2"><button type="button" class="detail-edit-contact px-3 py-1.5 bg-amp-navy text-white text-sm rounded-lg" data-id="' + contact.id + '">Edit</button><button type="button" class="detail-delete-contact px-3 py-1.5 border border-red-200 text-red-600 text-sm rounded-lg hover:bg-red-50" data-id="' + contact.id + '">Delete contact</button></span></div>';
-                    html += '<dl class="grid grid-cols-1 gap-2 text-sm"><dt class="text-slate-500">Email</dt><dd>' + (contact.email || '—') + '</dd><dt class="text-slate-500">Phone</dt><dd>' + (contact.phone || '—') + '</dd><dt class="text-slate-500">Stage</dt><dd><span class="px-2 py-0.5 rounded-full text-xs font-medium ' + (stage ? stage.color : '') + '">' + (stage ? stage.name : contact.stageId) + '</span></dd><dt class="text-slate-500">Owner</dt><dd>' + (owner ? owner.name : '—') + '</dd><dt class="text-slate-500">Tags</dt><dd>' + (contact.tags && contact.tags.length ? contact.tags.join(', ') : '—') + '</dd><dt class="text-slate-500">Lead source</dt><dd>' + (contact.leadSource || '—') + '</dd></dl>';
+                    html += '<dl class="grid grid-cols-1 gap-2 text-sm"><dt class="text-slate-500">Email</dt><dd>' + (contact.email || '—') + '</dd><dt class="text-slate-500">Phone</dt><dd>' + (contact.phone || '—') + '</dd><dt class="text-slate-500">Stage</dt><dd><span class="px-2 py-0.5 rounded-full text-xs font-medium ' + (stage ? stage.color : '') + '">' + (stage ? stage.name : contact.stageId) + '</span></dd><dt class="text-slate-500">Owner</dt><dd>' + (owner ? owner.name : '—') + '</dd><dt class="text-slate-500">Total deal value</dt><dd class="font-semibold text-amp-gold-dark">$' + getContactDealValue(contact.id).toLocaleString() + '</dd><dt class="text-slate-500">Tags</dt><dd>' + (contact.tags && contact.tags.length ? contact.tags.join(', ') : '—') + '</dd><dt class="text-slate-500">Lead source</dt><dd>' + (contact.leadSource || '—') + '</dd></dl>';
                     if (contact.notes) html += '<div><p class="text-sm font-medium text-slate-700 mb-1">Notes</p><p class="text-slate-600 text-sm">' + (contact.notes || '').replace(/\n/g, '<br>') + '</p></div>';
                 }
                 if (deal) {
-                    html += '<div class="border-t border-slate-200 pt-4"><h5 class="font-semibold text-amp-navy-dark mb-2">Deal</h5><div class="flex justify-between items-start gap-2"><div><p class="font-medium">' + (deal.name || '—') + '</p><p class="text-amp-gold-dark font-semibold">$' + (deal.value || 0).toLocaleString() + '</p><p class="text-xs text-slate-500">' + (getStageById(deal.stageId) ? getStageById(deal.stageId).name : deal.stageId) + '</p></div><button type="button" class="detail-delete-deal px-2 py-1 border border-red-200 text-red-600 text-xs rounded hover:bg-red-50 flex-shrink-0" data-deal-id="' + deal.id + '">Delete deal</button></div></div>';
+                    html += '<div class="border-t border-slate-200 pt-4"><h5 class="font-semibold text-amp-navy-dark mb-2">Deal</h5><div class="flex justify-between items-start gap-2"><div><p class="font-medium">' + (deal.name || '—') + '</p><p class="text-amp-gold-dark font-semibold">$' + (deal.value || 0).toLocaleString() + '</p><p class="text-xs text-slate-500">' + (getStageById(deal.stageId) ? getStageById(deal.stageId).name : deal.stageId) + '</p></div><span class="flex gap-1 flex-shrink-0"><button type="button" class="detail-edit-deal px-2 py-1 border border-slate-200 text-slate-600 text-xs rounded hover:bg-slate-50" data-deal-id="' + deal.id + '">Edit</button><button type="button" class="detail-delete-deal px-2 py-1 border border-red-200 text-red-600 text-xs rounded hover:bg-red-50" data-deal-id="' + deal.id + '">Delete deal</button></span></div></div>';
                 }
                 var contactTasks = contact ? state.tasks.filter(function(t) { return t.contactId === contact.id; }) : [];
                 html += '<div class="border-t border-slate-200 pt-4"><h5 class="font-semibold text-amp-navy-dark mb-2">Tasks</h5>' + (contactTasks.length ? '<ul class="space-y-1 text-sm">' + contactTasks.slice(0, 5).map(function(t) { return '<li>' + (t.title || '') + ' — ' + (t.dueDate || '') + ' (' + (t.status || 'todo') + ')</li>'; }).join('') + '</ul>' : '<p class="text-slate-500 text-sm">No tasks yet.</p>') + '<button type="button" class="detail-add-task mt-2 px-3 py-1.5 border border-amp-navy text-amp-navy text-sm rounded-lg" data-contact-id="' + (contact ? contact.id : '') + '">Add task</button></div>';
@@ -1374,6 +1423,8 @@
                 if (deleteContactBtn) deleteContactBtn.addEventListener('click', function() { deleteContact(deleteContactBtn.getAttribute('data-id')); });
                 var deleteDealBtn = document.querySelector('.detail-delete-deal');
                 if (deleteDealBtn) deleteDealBtn.addEventListener('click', function() { deleteDeal(deleteDealBtn.getAttribute('data-deal-id')); });
+                var editDealBtn = document.querySelector('.detail-edit-deal');
+                if (editDealBtn) editDealBtn.addEventListener('click', function() { closeDetailDrawer(); openDealModal(editDealBtn.getAttribute('data-deal-id')); });
                 var addTaskBtn = document.querySelector('.detail-add-task');
                 if (addTaskBtn) addTaskBtn.addEventListener('click', function() { closeDetailDrawer(); openTaskModal(addTaskBtn.getAttribute('data-contact-id') || null); });
                 var sendBtn = document.querySelector('.detail-send-email');
@@ -1419,22 +1470,81 @@
             });
 
             document.getElementById('addDealBtn').addEventListener('click', function() {
-                var name = window.prompt('Deal name');
-                if (!name) return;
-                var value = parseInt(window.prompt('Deal value ($)') || '0', 10);
-                state.deals.push({
-                    id: 'd' + Date.now(),
-                    contactId: state.contacts[0] ? state.contacts[0].id : null,
-                    name: name,
-                    value: value,
-                    stageId: 'lead',
-                    ownerId: state.teamMembers[0] ? state.teamMembers[0].id : null,
-                    createdAt: Date.now()
-                });
+                openDealModal();
+            });
+
+            function openDealModal(dealId) {
+                var modal = document.getElementById('dealModal');
+                var form = document.getElementById('dealForm');
+                var titleEl = document.getElementById('dealModalTitle');
+                var contactSelect = document.getElementById('dealContactId');
+                var stageWrap = document.getElementById('dealStageOwnerWrap');
+                contactSelect.innerHTML = '<option value="">— Select contact —</option>' + state.contacts.map(function(c) { return '<option value="' + c.id + '">' + (c.name || '') + (c.company ? ' · ' + c.company : '') + '</option>'; }).join('');
+                if (dealId) {
+                    var d = getDealById(dealId);
+                    if (!d) return;
+                    titleEl.textContent = 'Edit deal';
+                    document.getElementById('dealId').value = d.id;
+                    document.getElementById('dealContactId').value = d.contactId || '';
+                    document.getElementById('dealName').value = d.name || '';
+                    document.getElementById('dealValue').value = d.value != null ? d.value : '';
+                    stageWrap.classList.remove('hidden');
+                    var stageSel = document.getElementById('dealStageId');
+                    var ownerSel = document.getElementById('dealOwnerId');
+                    stageSel.innerHTML = STAGES.map(function(s) { return '<option value="' + s.id + '">' + s.name + '</option>'; }).join('');
+                    ownerSel.innerHTML = state.teamMembers.map(function(t) { return '<option value="' + t.id + '">' + (t.name || t.id) + '</option>'; }).join('');
+                    stageSel.value = d.stageId || 'lead';
+                    ownerSel.value = d.ownerId || (state.teamMembers[0] && state.teamMembers[0].id) || '';
+                } else {
+                    titleEl.textContent = 'Add deal';
+                    document.getElementById('dealId').value = '';
+                    form.reset();
+                    document.getElementById('dealValue').value = '0';
+                    stageWrap.classList.add('hidden');
+                }
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                lucide.createIcons();
+            }
+            function closeDealModal() {
+                document.getElementById('dealModal').classList.add('hidden');
+                document.getElementById('dealModal').classList.remove('flex');
+            }
+            document.getElementById('dealForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                var id = document.getElementById('dealId').value;
+                var contactId = document.getElementById('dealContactId').value || null;
+                var name = document.getElementById('dealName').value.trim();
+                var value = parseInt(document.getElementById('dealValue').value, 10) || 0;
+                if (id) {
+                    var deal = getDealById(id);
+                    if (deal) {
+                        deal.contactId = contactId;
+                        deal.name = name;
+                        deal.value = value;
+                        deal.stageId = (document.getElementById('dealStageId') && document.getElementById('dealStageId').value) || deal.stageId;
+                        deal.ownerId = (document.getElementById('dealOwnerId') && document.getElementById('dealOwnerId').value) || deal.ownerId;
+                    }
+                } else {
+                    state.deals.push({
+                        id: 'd' + Date.now(),
+                        contactId: contactId,
+                        name: name,
+                        value: value,
+                        stageId: 'lead',
+                        ownerId: (state.teamMembers[0] && state.teamMembers[0].id) || null,
+                        createdAt: Date.now()
+                    });
+                }
                 saveData(state);
+                closeDealModal();
                 renderPipeline();
                 renderDashboard();
+                renderContacts();
+                lucide.createIcons();
             });
+            document.getElementById('closeDealModal').addEventListener('click', closeDealModal);
+            document.getElementById('cancelDealModal').addEventListener('click', closeDealModal);
 
             (function() {
                 function applyPipelineFilters() { renderPipeline(); }
@@ -1463,6 +1573,30 @@
             })();
 
             // ——— Settings tabs ———
+            function renderSettingsUsersList() {
+                var ul = document.getElementById('settingsUsersList');
+                if (!ul) return;
+                ul.innerHTML = state.teamMembers.map(function(u) {
+                    return '<div class="flex justify-between items-center p-3 border border-slate-200 rounded-lg"><div><p class="font-medium text-slate-800">' + (u.name || '') + '</p><p class="text-sm text-slate-500">' + (u.email || '') + ' · ' + (u.role || 'Member') + '</p></div><button type="button" class="user-delete p-2 text-slate-400 hover:text-red-600 rounded" data-user-id="' + u.id + '" aria-label="Remove user"' + (state.teamMembers.length <= 1 ? ' disabled title="Keep at least one user"' : '') + '><i data-lucide="trash-2" class="w-4 h-4"></i></button></div>';
+                }).join('');
+                ul.querySelectorAll('.user-delete:not([disabled])').forEach(function(btn) {
+                    btn.addEventListener('click', function() {
+                        var uid = btn.getAttribute('data-user-id');
+                        if (!uid || state.teamMembers.length <= 1) return;
+                        if (!window.confirm('Remove this user? Contacts and deals assigned to them will be unassigned.')) return;
+                        state.teamMembers = state.teamMembers.filter(function(t) { return t.id !== uid; });
+                        var firstId = state.teamMembers[0] && state.teamMembers[0].id;
+                        state.contacts.forEach(function(c) { if (c.ownerId === uid) c.ownerId = firstId || null; });
+                        state.deals.forEach(function(d) { if (d.ownerId === uid) d.ownerId = firstId || null; });
+                        state.tasks.forEach(function(t) { if (t.ownerId === uid) t.ownerId = firstId || null; });
+                        saveData(state);
+                        renderSettingsUsersList();
+                        lucide.createIcons();
+                    });
+                });
+                lucide.createIcons();
+            }
+
             function openSettingsTab(tabId) {
                 document.querySelectorAll('.settings-tab[data-tab]').forEach(function(t) {
                     t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
@@ -1490,8 +1624,7 @@
                     if (cu) cu.value = state.settings.competitorUrls || '';
                 }
                 if (tabId === 'users') {
-                    var ul = document.getElementById('settingsUsersList');
-                    if (ul) ul.innerHTML = state.teamMembers.map(function(u) { return '<div class="flex justify-between items-center p-2 border border-slate-200 rounded-lg"><span>' + (u.name || '') + ' — ' + (u.role || '') + '</span></div>'; }).join('');
+                    renderSettingsUsersList();
                     lucide.createIcons();
                 }
                 if (tabId === 'database') {
@@ -1557,6 +1690,42 @@
             document.getElementById('settingsInvoca').addEventListener('change', function() { state.settings.invoca = this.value; saveData(state, { autosaveToast: true }); });
             document.getElementById('settingsIndustry').addEventListener('blur', function() { state.settings.industry = this.value.trim(); saveData(state, { autosaveToast: true }); });
             document.getElementById('settingsGoals').addEventListener('blur', function() { state.settings.primaryGoals = this.value.trim(); saveData(state, { autosaveToast: true }); });
+
+            document.getElementById('settingsInviteUser').addEventListener('click', function() { openUserModal(); });
+            function openUserModal() {
+                document.getElementById('userForm').reset();
+                document.getElementById('userTempPasswordWrap').classList.add('hidden');
+                document.getElementById('userModal').classList.remove('hidden');
+                document.getElementById('userModal').classList.add('flex');
+                lucide.createIcons();
+            }
+            function closeUserModal() {
+                document.getElementById('userModal').classList.add('hidden');
+                document.getElementById('userModal').classList.remove('flex');
+            }
+            document.getElementById('userForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                var name = document.getElementById('userName').value.trim();
+                var email = document.getElementById('userEmail').value.trim();
+                var role = (document.getElementById('userRole') && document.getElementById('userRole').value) || 'Member';
+                if (!name || !email) return;
+                var id = 'tm' + Date.now();
+                state.teamMembers.push({ id: id, name: name, email: email, role: role });
+                var tempPassword = Array.from(crypto.getRandomValues(new Uint8Array(12))).map(function(b) { return 'abcdefghjkmnpqrstuvwxyz23456789'[b % 32]; }).join('');
+                document.getElementById('userTempPasswordDisplay').textContent = tempPassword;
+                document.getElementById('userTempPasswordWrap').classList.remove('hidden');
+                saveData(state);
+                renderSettingsUsersList();
+                document.getElementById('userCopyPassword').onclick = function() {
+                    navigator.clipboard.writeText(tempPassword);
+                    this.textContent = 'Copied!';
+                    setTimeout(function() { document.getElementById('userCopyPassword').textContent = 'Copy password'; }, 2000);
+                };
+                lucide.createIcons();
+            });
+            document.getElementById('closeUserModal').addEventListener('click', closeUserModal);
+            document.getElementById('cancelUserModal').addEventListener('click', closeUserModal);
+            document.getElementById('userModal').addEventListener('click', function(e) { if (e.target === this) closeUserModal(); });
 
             document.getElementById('dbSaveBtn').addEventListener('click', function() {
                 var url = (document.getElementById('dbUrl') && document.getElementById('dbUrl').value) || '';
