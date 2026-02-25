@@ -388,6 +388,7 @@
                     <h3 class="font-semibold text-amp-navy-dark mb-4">Company info</h3>
                     <div class="space-y-3 max-w-md">
                         <label class="block"><span class="text-sm font-medium text-slate-700">Company name</span><input type="text" id="settingsCompanyName" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="Your company"></label>
+                        <label class="block"><span class="text-sm font-medium text-slate-700">Website</span><input type="url" id="settingsCompanyWebsite" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="https://yourcompany.com"></label>
                         <label class="block"><span class="text-sm font-medium text-slate-700">Address</span><input type="text" id="settingsCompanyAddress" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="Street, City, State"></label>
                         <label class="block"><span class="text-sm font-medium text-slate-700">Business type</span><input type="text" id="settingsBusinessType" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="e.g. B2B, B2C, Agency"></label>
                         <label class="block"><span class="text-sm font-medium text-slate-700">Customer persona (ICP)</span><input type="text" id="settingsCustomerPersona" class="mt-1 w-full px-4 py-2 border border-slate-200 rounded-lg" placeholder="e.g. SMB owners, marketing directors"></label>
@@ -493,7 +494,7 @@
                     <p class="font-medium text-slate-700 mb-1.5">Available variables (use in subject or body). Type <kbd class="px-1.5 py-0.5 bg-white border border-slate-300 rounded text-slate-700">/</kbd> to open a variable picker.</p>
                     <p class="mb-1"><strong>Contact:</strong> <code class="bg-white px-1 rounded">{{name}}</code> <code class="bg-white px-1 rounded">{{contact.name}}</code> <code class="bg-white px-1 rounded">{{contact.email}}</code> <code class="bg-white px-1 rounded">{{contact.phone}}</code> <code class="bg-white px-1 rounded">{{company}}</code> <code class="bg-white px-1 rounded">{{contact.company}}</code> <code class="bg-white px-1 rounded">{{contact.notes}}</code> <code class="bg-white px-1 rounded">{{contact.stage}}</code> <code class="bg-white px-1 rounded">{{contact.lead_source}}</code> <code class="bg-white px-1 rounded">{{contact.tags}}</code></p>
                     <p class="mb-1"><strong>Deal:</strong> <code class="bg-white px-1 rounded">{{deal.name}}</code> <code class="bg-white px-1 rounded">{{deal.value}}</code> <code class="bg-white px-1 rounded">{{deal.stage}}</code></p>
-                    <p class="mb-1"><strong>Company (Settings → Company info):</strong> <code class="bg-white px-1 rounded">{{company.name}}</code> <code class="bg-white px-1 rounded">{{company.address}}</code> <code class="bg-white px-1 rounded">{{company.business_type}}</code> <code class="bg-white px-1 rounded">{{company.industry}}</code></p>
+                    <p class="mb-1"><strong>Company (Settings → Company info):</strong> <code class="bg-white px-1 rounded">{{company.name}}</code> <code class="bg-white px-1 rounded">{{company.website}}</code> <code class="bg-white px-1 rounded">{{company.address}}</code> <code class="bg-white px-1 rounded">{{company.business_type}}</code> <code class="bg-white px-1 rounded">{{company.industry}}</code></p>
                     <p class="mb-1"><strong>Meeting (next task):</strong> <code class="bg-white px-1 rounded">{{meeting.title}}</code> <code class="bg-white px-1 rounded">{{meeting.date}}</code> <code class="bg-white px-1 rounded">{{meeting.details}}</code></p>
                     <p><strong>Date/time:</strong> <code class="bg-white px-1 rounded">{{date.today}}</code> <code class="bg-white px-1 rounded">{{time.now}}</code></p>
                 </div>
@@ -695,7 +696,7 @@
             }
 
             function getDefaultSettings() {
-                return { timezone: 'America/Los_Angeles', companyName: '', companyAddress: '', businessType: '', customerPersona: '', keyServices: '', competitorUrls: '', geminiKey: '', callRail: '', invoca: '', industry: '', primaryGoals: '' };
+                return { timezone: 'America/Los_Angeles', companyName: '', companyWebsite: '', companyAddress: '', businessType: '', customerPersona: '', keyServices: '', competitorUrls: '', geminiKey: '', callRail: '', invoca: '', industry: '', primaryGoals: '' };
             }
 
             function loadFromLocalStorage() {
@@ -792,6 +793,7 @@
                     if (settingsRow) {
                         settings.timezone = settingsRow.timezone || settings.timezone;
                         settings.companyName = settingsRow.company_name || '';
+                        settings.companyWebsite = settingsRow.company_website || '';
                         settings.companyAddress = settingsRow.company_address || '';
                         settings.businessType = settingsRow.business_type || '';
                         settings.customerPersona = settingsRow.customer_persona || '';
@@ -828,7 +830,7 @@
                 var taskRows = (data.tasks || []).map(function(t) { return { id: t.id, contact_id: t.contactId, title: t.title, due_date: t.dueDate || null, owner_id: t.ownerId, status: t.status || 'todo', created_at: t.createdAt }; });
                 var templateRows = (data.emailTemplates || []).map(function(e) { return { id: e.id, name: e.name, subject: e.subject, body: e.body }; });
                 var s = data.settings || {};
-                var settingsRow = { id: 'default', timezone: s.timezone || 'America/Los_Angeles', company_name: s.companyName || null, company_address: s.companyAddress || null, business_type: s.businessType || null, customer_persona: s.customerPersona || null, key_services: s.keyServices || null, competitor_urls: s.competitorUrls || null, gemini_key: s.geminiKey || null, call_rail: s.callRail || null, invoca: s.invoca || null, industry: s.industry || null, primary_goals: s.primaryGoals || null };
+                var settingsRow = { id: 'default', timezone: s.timezone || 'America/Los_Angeles', company_name: s.companyName || null, company_website: s.companyWebsite || null, company_address: s.companyAddress || null, business_type: s.businessType || null, customer_persona: s.customerPersona || null, key_services: s.keyServices || null, competitor_urls: s.competitorUrls || null, gemini_key: s.geminiKey || null, call_rail: s.callRail || null, invoca: s.invoca || null, industry: s.industry || null, primary_goals: s.primaryGoals || null };
                 var baseUrl = cfg.url.replace(/\/$/, '') + '/rest/v1';
                 var upsert = function(path, body) {
                     return fetch(baseUrl + path, {
@@ -959,6 +961,7 @@
                     'deal.stage': (dealStage && dealStage.name) || (deal && deal.stageId) || '',
                     'company.name': s.companyName || '',
                     'company.address': s.companyAddress || '',
+                    'company.website': s.companyWebsite || '',
                     'company.business_type': s.businessType || '',
                     'company.industry': s.industry || '',
                     'meeting.title': (nextTask && nextTask.title) || '',
@@ -1622,12 +1625,14 @@
                 }
                 if (tabId === 'company') {
                     var cn = document.getElementById('settingsCompanyName');
+                    var cw = document.getElementById('settingsCompanyWebsite');
                     var ca = document.getElementById('settingsCompanyAddress');
                     var bt = document.getElementById('settingsBusinessType');
                     var cp = document.getElementById('settingsCustomerPersona');
                     var ks = document.getElementById('settingsKeyServices');
                     var cu = document.getElementById('settingsCompetitorUrls');
                     if (cn) cn.value = state.settings.companyName || '';
+                    if (cw) cw.value = state.settings.companyWebsite || '';
                     if (ca) ca.value = state.settings.companyAddress || '';
                     if (bt) bt.value = state.settings.businessType || '';
                     if (cp) cp.value = state.settings.customerPersona || '';
@@ -1667,6 +1672,7 @@
                 var el = function(id) { var e = document.getElementById(id); return e ? e.value : ''; };
                 state.settings.timezone = el('settingsTimezone') || state.settings.timezone;
                 state.settings.companyName = el('settingsCompanyName');
+                state.settings.companyWebsite = el('settingsCompanyWebsite');
                 state.settings.companyAddress = el('settingsCompanyAddress');
                 state.settings.businessType = el('settingsBusinessType');
                 state.settings.customerPersona = el('settingsCustomerPersona');
@@ -1691,6 +1697,7 @@
                 lucide.createIcons();
             });
             document.getElementById('settingsCompanyName').addEventListener('blur', function() { state.settings.companyName = this.value; saveData(state, { autosaveToast: true }); });
+            document.getElementById('settingsCompanyWebsite').addEventListener('blur', function() { state.settings.companyWebsite = this.value; saveData(state, { autosaveToast: true }); });
             document.getElementById('settingsCompanyAddress').addEventListener('blur', function() { state.settings.companyAddress = this.value; saveData(state, { autosaveToast: true }); });
             document.getElementById('settingsBusinessType').addEventListener('blur', function() { state.settings.businessType = this.value; saveData(state, { autosaveToast: true }); });
             document.getElementById('settingsCustomerPersona').addEventListener('blur', function() { state.settings.customerPersona = this.value; saveData(state, { autosaveToast: true }); });
@@ -1930,7 +1937,7 @@
             document.getElementById('addTemplateBtn').addEventListener('click', function() { openTemplateModal(); });
 
             (function() {
-                var TEMPLATE_VARS = ['name','company','contact.name','contact.email','contact.phone','contact.company','contact.notes','contact.stage','contact.lead_source','contact.tags','deal.name','deal.value','deal.stage','company.name','company.address','company.business_type','company.industry','meeting.title','meeting.date','meeting.details','date.today','time.now'];
+                var TEMPLATE_VARS = ['name','company','contact.name','contact.email','contact.phone','contact.company','contact.notes','contact.stage','contact.lead_source','contact.tags','deal.name','deal.value','deal.stage','company.name','company.website','company.address','company.business_type','company.industry','meeting.title','meeting.date','meeting.details','date.today','time.now'];
                 var menuEl = document.getElementById('templateVariableMenu');
                 var activeEl = null;
                 var slashStart = 0;
@@ -2083,15 +2090,18 @@
             function buildAiSystemContext() {
                 var s = state.settings || {};
                 var parts = [];
-                parts.push('You are an expert AI assistant for Alchemy CRM, a CRM for small and medium businesses. Your role is to:');
-                parts.push('1. Recommend how to best use the CRM (best practices, features to use, how to train teams).');
-                parts.push('2. Improve workflows (follow-up sequences, task habits, pipeline stages, response time).');
-                parts.push('3. Create or suggest workflows tailored to the company\'s goals and industry (e.g. lead nurturing, qualification, closing).');
-                parts.push('Keep answers concise, actionable, and step-by-step when suggesting workflows.');
-                if (s.companyName) parts.push('Company name: ' + s.companyName + '.');
+                parts.push('You are an expert AI assistant for Alchemy CRM, a CRM for small and medium businesses. Your role is to suggest how to best utilize the CRM based on the company\'s specific info. Use the following context from Settings to tailor every recommendation:');
+                parts.push('Company: ' + (s.companyName || 'not set') + '.');
+                if (s.companyWebsite) parts.push('Website: ' + s.companyWebsite + '.');
+                if (s.companyAddress) parts.push('Address: ' + s.companyAddress + '.');
+                if (s.businessType) parts.push('Business type: ' + s.businessType + '.');
+                if (s.customerPersona) parts.push('Customer persona (ICP): ' + s.customerPersona + '.');
+                if (s.keyServices) parts.push('Key services: ' + s.keyServices + '.');
+                if (s.competitorUrls) parts.push('Competitors: ' + s.competitorUrls + '.');
                 if (s.industry) parts.push('Industry: ' + s.industry + '.');
                 if (s.primaryGoals) parts.push('Primary goals: ' + s.primaryGoals + '.');
-                parts.push('The CRM has: contacts (with stages, tags, owners), deals (pipeline stages), tasks (linked to contacts), email templates, and reports.');
+                parts.push('Based on this context, you should: 1) Recommend how to best use the CRM (best practices, which features to use first, how to train the team). 2) Suggest workflows tailored to their business (follow-up, pipeline stages, task habits, response time). 3) Give actionable, step-by-step advice. Keep answers concise and specific to their company.');
+                parts.push('The CRM has: contacts (stages, tags, owners), deals (pipeline/Kanban), tasks (linked to contacts), email templates with merge fields, and reports.');
                 return parts.join(' ');
             }
 
